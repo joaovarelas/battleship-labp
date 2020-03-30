@@ -6,7 +6,7 @@
 #include <stdbool.h>
 
 #include "board.h"
-
+#include "player.h"
 
 void play_by_turns();
 

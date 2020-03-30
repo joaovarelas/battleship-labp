@@ -4,21 +4,26 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <string.h>
 
 #include "board.h"
 #include "settings.h"
+
+#define MAX_PLAYER_NAME 16
 
 typedef struct {
 
     char* name;
     Board* board;
-    bool has_ships_alive;
-    short** hit_matrix; // 0 - unknown ; 1 - hit ; 2 - missed
+    bool alive;
+    //Pos* plays;
     
 } Player;
 
 
 Player* init_player( char* name );
 Player* setup_player();
+Board* create_ship( char idx );
+
 
 #endif

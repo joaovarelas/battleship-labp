@@ -4,14 +4,16 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "board.h"
+
 typedef struct {
     
-    unsigned int board_size, num_ships;
-    unsigned int* size_ships;
+    unsigned char board_size;
+    unsigned char num_ships;
     
 } Settings;
 
-/* Global Settings */
+// global var
 Settings* settings;
 
 
