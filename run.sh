@@ -1,3 +1,3 @@
 #!/bin/sh
 
-cd src/ && make clean all && cd ../ && ./bin/client
+reset && cd src/ && make clean all && cd ../ && ./bin/client

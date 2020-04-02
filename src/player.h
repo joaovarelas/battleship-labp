@@ -1,29 +1,23 @@
 #ifndef __player__
 #define __player__
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdbool.h>
-#include <string.h>
-
 #include "board.h"
 #include "settings.h"
-
-#define MAX_PLAYER_NAME 16
 
 typedef struct {
 
     char* name;
     Board* board;
     bool alive;
-    //Pos* plays;
     
 } Player;
 
 
 Player* init_player( char* name );
 Player* setup_player();
-Board* create_ship( char idx );
+Board* build_ship();
+void place_ship( Board* player_board, Board* ship_board );
 
+void free_player( Player* player );
 
 #endif
