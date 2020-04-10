@@ -2,7 +2,6 @@
 #define __player__
 
 #include "board.h"
-#include "settings.h"
 
 typedef struct {
 
@@ -15,9 +14,9 @@ typedef struct {
 
 Player* init_player( char* name );
 Player* setup_player();
-Board* build_ship();
-void place_ship( Board* player_board, Board* ship_board );
-
 void free_player( Player* player );
+
+Board* build_ship( uchar idx );
+void place_ship( Board* player_board, Board* ship_board );
 
 #endif

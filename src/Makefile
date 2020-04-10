@@ -6,7 +6,7 @@ SRC = player.c board.c game.c ship.c settings.c
 CLI = client.c
 SRV = server.c
 
-GCCARGS = -Wall -std=c99
+GCCARGS = -Wall -Wno-pointer-sign -std=c99
 
 BINPATH = ../bin
 

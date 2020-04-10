@@ -1,0 +1,25 @@
+title Arquitetura Cliente-Servidor
+
+participant Cliente
+participant Servidor
+
+Cliente->Servidor:Pedido de ligação
+
+Cliente<-Servidor:Aceita se nº clientes < 2\nRetorna settings do jogo
+
+Cliente->(2)Servidor:Envia instância do Player\n(Nome, Tabuleiro, etc.)
+
+Cliente(2)<--Servidor:Espera pelo adversário
+
+Cliente<-Servidor:Início do jogo\nRetorna tabuleiro
+
+Cliente->(2)Servidor:Envia coordenadas (x, y)
+
+Cliente(2)<--Servidor:Acertou? Joga novamente\nFalhou? Espera p/ adversário
+
+
+box over Cliente,Servidor: ...
+
+Cliente<-Servidor:Adv. s/ barcos? Vitória\nCli. s/ barcos? Derrota
+
+Cliente<-Servidor:Termina ligação

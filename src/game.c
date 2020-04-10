@@ -1,23 +1,6 @@
 #include "game.h"
 
 void play_by_turns(){
-    /*
-      TODO:
-
-      Setup player1:
-      - name
-      - board
-      Setup player2:
-      - name
-      - board
-       
-      Start game:
-      - Select random player to start
-      - Ask coordinates
-      - Play
-      - Switch turns
-      - Repeat
-    */
 
     printf( "\nSetting up Player #1\n" );
     Player* player1 = setup_player();

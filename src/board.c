@@ -6,10 +6,9 @@ Board* init_board( uchar n ){
 
     board -> size = n;
     board -> matrix = ( Cell** ) malloc ( n * sizeof( Cell* ) );
-    board -> ships = ( Ship** ) malloc ( ( 1 + MAX_SHIPS( n ) ) * sizeof( Ship* ) );
+    board -> ships = ( Ship** ) malloc ( MAX_SHIPS( n ) * sizeof( Ship* ) );
     board -> idx = 0;
 
-    // Initialize
     for( uchar i = 0; i < n ; i++ ){
         
         board -> matrix[ i ] = ( Cell* ) malloc ( n * sizeof( Cell ) );
@@ -27,6 +26,28 @@ Board* init_board( uchar n ){
     }
     
     return board;
+}
+
+
+// Send it to the void
+void free_board( Board* board ){
+
+    uchar i;
+
+    for( i = 0; i < board -> size; i++ ){
+        free( board -> matrix[ i ] );    
+    }
+    free( board -> matrix );
+
+    
+    for( i = 1; i <= MAX_SHIPS( board -> size ); i++ ){
+        free( board -> ships[ i ] );
+    }
+    free( board -> ships );
+
+    free( board );
+    
+    return;
 }
 
 
@@ -51,7 +72,8 @@ void print_board( Board* board, bool game_mode ){
         for( j = 0 ; j < n ; j++ ){
             printf( " " );
 
-            
+
+	    // Print by "state" or Print by "ship"
             if( game_mode ){
 
                 switch( board -> matrix[ i ][ j ].state ){
@@ -67,7 +89,7 @@ void print_board( Board* board, bool game_mode ){
                 default:
                     break;
                 }
-                
+
             } else {
                 
                 switch( board -> matrix[ i ][ j ].ship ){
@@ -100,12 +122,12 @@ void print_board( Board* board, bool game_mode ){
     }
     printf( "───┘\n" );    
 
-    printf( " STATE, SHIP: %d, %d\n",  board -> matrix[ i ][ j ].state,  board -> matrix[ i ][ j ].ship ); 
     return;
 }
 
 
-// in-place n-cycle approach, swapping ring elements
+// Rotate nxn matrix 90º clockwise
+// In-place n-cycle approach, swapping ring elements
 void rotate_board( Board* board ){
     
     uchar n = board -> size;
@@ -122,12 +144,99 @@ void rotate_board( Board* board ){
             
         }
     }
-                                                     
     return;
 }
 
 
-// copy ship positions only for temp. operations
+void shift_board( Board* board, uchar orientation ){
+
+ 
+    if( orientation == 1 || orientation == 2 ){
+        // Vertical
+  
+        uchar x = ( orientation == 1 ) ? 0 : MAX_SHIP_SIZE - 1;
+       
+        for( uchar i = 0; i < MAX_SHIP_SIZE; i++){
+            if( board -> matrix[ x ][ i ].ship != 0 ){
+                return;
+            }
+        }
+
+       
+        if( orientation == 1 ){
+            // UP
+
+            for( uchar i = 0; i < MAX_SHIP_SIZE - 1; i++){
+                for( uchar j = 0; j < MAX_SHIP_SIZE; j++){
+                    board -> matrix[ i ][ j ].ship = board -> matrix[ i + 1 ][ j ].ship;
+                }
+            }
+
+            for( uchar j = 0; j < MAX_SHIP_SIZE - 1; j++)
+                board -> matrix[ MAX_SHIP_SIZE - 1 ][ j ].ship = 0;
+            
+        }else if(orientation == 2){
+            // DOWN
+            
+            for( uchar i = MAX_SHIP_SIZE - 1; i > 0; i--){
+                for( uchar j = 0; j < MAX_SHIP_SIZE; j++){
+                    board -> matrix[ i ][ j ].ship = board -> matrix[ i - 1 ][ j ].ship;
+                }
+            }
+
+            for( uchar j = 0; j < MAX_SHIP_SIZE - 1; j++)
+                board -> matrix[ 0 ][ j ].ship = 0;
+            
+        }
+        
+     
+    }else if( orientation == 3 || orientation == 4 ){
+        // Horizontal
+        
+        uchar y = ( orientation == 3 ) ? 0 : MAX_SHIP_SIZE - 1;
+       
+        for( uchar i = 0; i < MAX_SHIP_SIZE; i++){
+            if( board -> matrix[ i ][ y ].ship != 0 ){
+                return;
+            }
+        }
+
+        if( orientation == 3 ){
+            // LEFT
+            
+            for( uchar j = 0; j < MAX_SHIP_SIZE - 1; j++){
+                for( uchar i = 0; i < MAX_SHIP_SIZE; i++){
+                    board -> matrix[ i ][ j ].ship = board -> matrix[ i ][ j + 1 ].ship;
+                }
+            }
+
+            for( uchar i = 0; i < MAX_SHIP_SIZE - 1; i++)
+                board -> matrix[ i ][ MAX_SHIP_SIZE - 1 ].ship = 0;
+                        
+        }else if(orientation == 4){
+            // RIGHT
+
+            for( uchar j = MAX_SHIP_SIZE - 1; j > 0; j--){
+                for( uchar i = 0; i < MAX_SHIP_SIZE; i++){
+                    board -> matrix[ i ][ j ].ship = board -> matrix[ i ][ j - 1 ].ship;
+                }
+            }
+
+            for( uchar i = 0; i < MAX_SHIP_SIZE - 1; i++)
+                board -> matrix[ i ][ 0 ].ship = 0;
+            
+        }
+        
+    }else{
+        // Unknown 
+    }
+    
+    
+    return;
+}
+
+
+// Copy board matrix
 void copy_board( Board* dst, Board* src ){
     uchar n = dst -> size; 
     for( uchar i = 0; i < n; i++){
@@ -139,24 +248,30 @@ void copy_board( Board* dst, Board* src ){
 }
 
 
-// send it to the void
-void free_board( Board* board ){
+bool ship_overlap( Board* dst, Board* src, Pos pos ){
+    uchar span = ( MAX_SHIP_SIZE / 2 );
 
-    uchar i;
-
-    for( i = 0; i < board -> size; i++ ){
-        free( board -> matrix[ i ] );    
-    }
-    free( board -> matrix );
-
+    uchar ii = 0,
+        jj = 0;
     
-    for( i = 1; i <= board -> idx; i++ ){
-        free( board -> ships[ i ] );
+    for( uchar i = pos.x - 1 - span; i <= pos.x - 1 + span; i++){
+        jj = 0;
+        for( uchar j = pos.y - 1 - span; j <= pos.y - 1 + span; j++){
+            
+            //printf("\nDEBUG: i j = %hhd %hhd\n", i, j);
+            if( src -> matrix[ ii ][ jj ].ship != 0
+                && dst -> matrix[ i ][ j ].ship != 0 ){
+                //printf("\nDEBUG: OVERLAP DETECTED\n");
+                return true;
+            
+            }
+            jj++;
+            
+        }
+        ii++;
     }
-    free( board -> ships );
-
-    free( board );
     
-    return;
+    return false;
 }
+
 

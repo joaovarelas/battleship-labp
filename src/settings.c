@@ -1,13 +1,43 @@
 #include "settings.h"
+#include <stdio.h>
 
 
 void load_settings(){
 
-    // Load default settings
     settings = ( Settings* ) malloc ( sizeof( Settings ) );
-    settings -> board_size = DEFAULT_BOARD_SIZE;
-    settings -> num_ships = DEFAULT_NUM_SHIPS; 
-   
+    
+    FILE* fp;
+    fp = fopen("settings", "r");
+    if(!fp){
+        printf("Settings file not found.\n");
+        exit(1);
+    }
+  
+    char line[MAX_LINE_SIZE];
+    
+    fgets( line, sizeof( line ), fp );
+    settings -> board_size = atoi( line );
+    
+    fgets( line, sizeof( line ), fp );
+    settings -> num_ships = atoi( line );
+
+    for( uchar i = 1; i <= settings -> num_ships; i++ ){
+        fgets( line, sizeof( line ), fp );
+
+        uchar j = 0;
+        while( line[ j ] != '\0' ){
+            
+            if( line[ j ] == '1' )
+                settings -> ship_shape[ i ][ j ] = true;
+            else
+                settings -> ship_shape[ i ][ j ] = false;
+            
+            j++;
+        }
+        
+        settings -> ship_shape[ i ][ 25 ] = '\0';
+    }
+
     return;
 }
 
@@ -27,10 +57,10 @@ void change_settings(){
 
     switch( x ){
     case 1:
-        // change
+        // Change
         break;
     case 2:
-        // go back
+        // Go back
         break;
     default:
         break;

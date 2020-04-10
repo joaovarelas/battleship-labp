@@ -44,6 +44,7 @@ int main( int argc, char** argv ){
                     "1 - Play By Turns\n" \
                     "2 - Local Multiplayer\n" \
                     "3 - Internet Multiplayer\n> ";
+                
                 printf( "%s", menu );
 
                 scanf( " %hhd", &x );

@@ -24,3 +24,8 @@ void copy_ship( Ship* dst, Ship* src ){
     
     return;
 }
+
+
+
+
+
