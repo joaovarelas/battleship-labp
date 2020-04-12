@@ -2,6 +2,8 @@
 #define __settings__
 
 #define MAX_LINE_SIZE 32
+#define FILENAME "settings/settings"
+
 
 #include "defines.h"
 

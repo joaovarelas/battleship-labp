@@ -29,8 +29,8 @@ Player* setup_player( ){
 
     char name[ MAX_PLAYER_NAME ];    
     printf( "\nPlayer Name:\n> " );
-    scanf( "%s", name );
-
+    scanf( " %[^\n]s", name );
+    
     Player* player = init_player ( name );
         
     printf( "\n1 - Random Strategy\n" );
@@ -94,34 +94,28 @@ Board* build_ship( uchar idx ){
         }
     }
 
+    tmp_board -> idx = idx;
+    tmp_board -> ships[ idx ] -> size = pieces;
+    
     uchar x;
 
     do{
         print_board( tmp_board, false );
 
-        printf( "\nDo you want to shift it?:\n\n1 - Up\n2 - Down\n3 - Left\n4 - Right\n5 - None\n> " );
-
-        scanf( " %hhd", &x );
-
-        shift_board( tmp_board, x );
+        char msg[] = "\nDo you want to move it?:\n\n1 - Up\n2 - Down\n3 - Left\n4 - Right" \
+            "\n5 - Rotate (clockwise)\n6 - Done\n> ";
         
-    }while( x != 5 );
-
-
-    
-    do {
-
-        print_board( tmp_board, false );
-
-        printf( "\nDo you want to rotate it? (clockwise):\n\n1 - Yes\n2 - No\n> " );
+        printf( msg );
 
         scanf( " %hhd", &x );
 
-        if( x == 1 ){
+        if( x >= 1 && x <= 4 ){
+            shift_board( tmp_board, x );
+        }else if( x == 5 ){
             rotate_board( tmp_board );
         }
         
-    } while( x == 1 );
+    }while( x != 6 );
   
     return tmp_board;
 }
@@ -153,7 +147,8 @@ void place_ship( Board* player_board, Board* ship_board ){
 
             printf( "\nCoordinates (x y) considering the 5x5 ship origin (center):\n> " );
 
-            scanf( " %hhd %hhd", &pos.x, &pos.y );
+            
+            scanf( " (%hhd %hhd)", &pos.x, &pos.y );                                                            
 
             // Check border limits
             if( ( pos.x < 3 || pos.x > n - 2 ) || ( pos.y < 3 || pos.y > n - 2 ) ){
@@ -216,13 +211,11 @@ void place_ship( Board* player_board, Board* ship_board ){
                 }
             }
 
-            player_board -> idx++;
-
-            uchar idx = player_board -> idx;
+            uchar idx = ship_board -> idx;
             
-            player_board -> ships[ idx ] = init_ship( pos, pieces );
-
-            //copy_ship( player_board -> ships[ idx ], ship_board -> ships[ idx ] );
+            player_board -> idx = idx;    
+            player_board -> ships_alive++;
+            player_board -> ships[ idx ] -> size = ship_board -> ships[ idx ] -> size;
             
             placed = true;
             
@@ -241,53 +234,3 @@ void place_ship( Board* player_board, Board* ship_board ){
 
 
 
-
-/*
-
-  Board* build_ship( ){
-
-  Board* tmp_board = init_board( MAX_SHIP_SIZE );
-  uchar pieces = 0;
-
-  // constant index. 1 ship only
-  uchar idx = 1;
-    
-  printf( "\nEnter coordinates (x y) to place one piece (0 0 to finish):\n" );
-
-  Pos pos;
-    
-  do{
-  print_board( tmp_board, false );
-
-  printf( "\nCoordinates (x y):\n> " );
-  scanf( " %hhd %hhd", &pos.x, &pos.y );
-
-  // TODO: Check adjacent pixels
-        
-  if( pos.x > 0 && pos.y > 0 ){
-  tmp_board -> matrix[ pos.x - 1 ][ pos.y - 1 ].ship = idx;
-  pieces++;
-  }
-        
-  }while( pos.x > 0 && pos.y > 0 );
-
-  tmp_board -> ships[ idx ] = init_ship( pos, pieces );
-
-  uchar z;
-  do {
-
-  print_board( tmp_board, false );
-
-  printf( "\nDo you want to rotate it? (clockwise):\n\n1 - Yes\n2 - No\n> " );
-
-  scanf( " %hhd", &z );
-
-  if( z == 1 ){
-  rotate_board( tmp_board );
-  }
-        
-  } while( z == 1 );
-    
-  return tmp_board;
-  }
-*/

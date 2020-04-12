@@ -16,7 +16,7 @@ typedef struct {
     
 } Ship;
 
-Ship* init_ship( );
+Ship* init_ship();
 void copy_ship( Ship* dst, Ship* src );
 
 

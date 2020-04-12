@@ -20,7 +20,7 @@ typedef struct {
     Cell** matrix; // Size^2 cells: (idship, hit)
     uchar idx; // Current ship index. 1 to MAXSHIPS(size)
     Ship** ships; // Indexed ships
-    
+    uchar ships_alive; // Number of ships alive
 } Board;
 
 

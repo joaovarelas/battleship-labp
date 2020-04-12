@@ -6,8 +6,9 @@ Board* init_board( uchar n ){
 
     board -> size = n;
     board -> matrix = ( Cell** ) malloc ( n * sizeof( Cell* ) );
-    board -> ships = ( Ship** ) malloc ( MAX_SHIPS( n ) * sizeof( Ship* ) );
+    board -> ships = ( Ship** ) malloc ( 1 + MAX_SHIPS( settings -> board_size ) * sizeof( Ship* ) );
     board -> idx = 0;
+    board -> ships_alive = 0;
 
     for( uchar i = 0; i < n ; i++ ){
         
@@ -21,7 +22,7 @@ Board* init_board( uchar n ){
         }
     }
 
-    for( uchar i = 1; i <= MAX_SHIPS( n ); i++ ){
+    for( uchar i = 1; i <= MAX_SHIPS( settings -> board_size ) ; i++ ){
         board -> ships[ i ] = init_ship();
     }
     
@@ -85,6 +86,7 @@ void print_board( Board* board, bool game_mode ){
                     break;
                 case HIT:
                     printf( "x" );
+                    //printf( "%hhd", board -> matrix[ i ][ j ].ship );
                     break;
                 default:
                     break;
@@ -172,10 +174,10 @@ void shift_board( Board* board, uchar orientation ){
                 }
             }
 
-            for( uchar j = 0; j < MAX_SHIP_SIZE - 1; j++)
+            for( uchar j = 0; j < MAX_SHIP_SIZE; j++)
                 board -> matrix[ MAX_SHIP_SIZE - 1 ][ j ].ship = 0;
             
-        }else if(orientation == 2){
+        }else if( orientation == 2 ){
             // DOWN
             
             for( uchar i = MAX_SHIP_SIZE - 1; i > 0; i--){
@@ -184,7 +186,7 @@ void shift_board( Board* board, uchar orientation ){
                 }
             }
 
-            for( uchar j = 0; j < MAX_SHIP_SIZE - 1; j++)
+            for( uchar j = 0; j < MAX_SHIP_SIZE; j++)
                 board -> matrix[ 0 ][ j ].ship = 0;
             
         }
@@ -210,7 +212,7 @@ void shift_board( Board* board, uchar orientation ){
                 }
             }
 
-            for( uchar i = 0; i < MAX_SHIP_SIZE - 1; i++)
+            for( uchar i = 0; i < MAX_SHIP_SIZE; i++)
                 board -> matrix[ i ][ MAX_SHIP_SIZE - 1 ].ship = 0;
                         
         }else if(orientation == 4){
@@ -222,7 +224,7 @@ void shift_board( Board* board, uchar orientation ){
                 }
             }
 
-            for( uchar i = 0; i < MAX_SHIP_SIZE - 1; i++)
+            for( uchar i = 0; i < MAX_SHIP_SIZE; i++)
                 board -> matrix[ i ][ 0 ].ship = 0;
             
         }
@@ -236,8 +238,9 @@ void shift_board( Board* board, uchar orientation ){
 }
 
 
-// Copy board matrix
+// Copy board
 void copy_board( Board* dst, Board* src ){
+
     uchar n = dst -> size; 
     for( uchar i = 0; i < n; i++){
         for( uchar j = 0; j < n; j++){
@@ -245,6 +248,13 @@ void copy_board( Board* dst, Board* src ){
         }
     }
 
+    dst -> idx = src -> idx;
+
+    for( uchar idx = 1; idx <= MAX_SHIPS( settings -> board_size) ; idx++ ){
+        copy_ship( dst -> ships[ idx ], src -> ships[ idx ] );
+    }
+
+    dst -> ships_alive = src -> ships_alive;
 }
 
 
@@ -255,6 +265,7 @@ bool ship_overlap( Board* dst, Board* src, Pos pos ){
         jj = 0;
     
     for( uchar i = pos.x - 1 - span; i <= pos.x - 1 + span; i++){
+        
         jj = 0;
         for( uchar j = pos.y - 1 - span; j <= pos.y - 1 + span; j++){
             
