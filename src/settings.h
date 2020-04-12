@@ -1,11 +1,8 @@
 #ifndef __settings__
 #define __settings__
 
-#define MAX_LINE_SIZE 32
-#define FILENAME "settings/settings"
-
-
 #include "defines.h"
+#include "board.h"
 
 typedef struct {
     
@@ -19,7 +16,11 @@ typedef struct {
 // Global
 Settings* settings;
 
+void init_settings();
 void load_settings();
+void write_settings();
 void change_settings();
+
+void build_new_ship( uchar idx );
 
 #endif

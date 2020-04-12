@@ -13,13 +13,13 @@
 #define MIN_BOARD_SIZE 20
 #define MAX_BOARD_SIZE 40
 
-#define DEFAULT_BOARD_SIZE 10
-#define DEFAULT_NUM_SHIPS 1
-
 #define MAX_SHIP_SIZE 5
-#define MAX_PLAYER_NAME 32
-#define MAX_SHIPS( N ) ( N * N  / 25 )
+#define MAX_SHIP_SQUARE 25
+#define MIN_SHIPS 1
+#define MAX_SHIPS( N ) ( N * N  / MAX_SHIP_SQUARE )
 
+#define MAX_LINE_SIZE 32
+#define FILENAME "settings/settings"
 
 typedef unsigned char uchar;
 

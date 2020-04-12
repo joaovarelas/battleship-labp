@@ -3,7 +3,7 @@
 Player* init_player( char* name ){
 
     Player* player = ( Player* ) malloc ( sizeof ( Player ) );
-    player -> name = ( char* ) malloc ( MAX_PLAYER_NAME * sizeof ( char ) );
+    player -> name = ( char* ) malloc ( MAX_LINE_SIZE * sizeof ( char ) );
     
     strcpy( player -> name, name);
     player -> board = init_board ( settings -> board_size  );
@@ -27,7 +27,7 @@ void free_player( Player* player ){
 Player* setup_player( ){
 
 
-    char name[ MAX_PLAYER_NAME ];    
+    char name[ MAX_LINE_SIZE ];    
     printf( "\nPlayer Name:\n> " );
     scanf( " %[^\n]s", name );
     
@@ -43,6 +43,8 @@ Player* setup_player( ){
 
     case 1:
         // TODO: Generate rand. board
+
+        
         break;
 
     case 2:
@@ -53,8 +55,8 @@ Player* setup_player( ){
 
                 printf( "\nBuilding Ship #%hhd\n", i );
                 
-                Board* ship = build_ship( i );
-                place_ship( player -> board, ship );
+                Board* ship = build_ship_test( i );
+                place_ship_test( player -> board, ship );
                 free_board( ship );
                 
                 i++;
@@ -102,7 +104,10 @@ Board* build_ship( uchar idx ){
     do{
         print_board( tmp_board, false );
 
-        char msg[] = "\nDo you want to move it?:\n\n1 - Up\n2 - Down\n3 - Left\n4 - Right" \
+        char msg[] = "\nDo you want to reposition the ship?\n"\
+            "This ship box will be placed in game board afterwards.\n" \
+            "Consider the origin (3 3)\n" \
+            "\n1 - Up\n2 - Down\n3 - Left\n4 - Right" \
             "\n5 - Rotate (clockwise)\n6 - Done\n> ";
         
         printf( msg );
@@ -145,7 +150,7 @@ void place_ship( Board* player_board, Board* ship_board ){
             
             print_board( player_board, false );
 
-            printf( "\nCoordinates (x y) considering the 5x5 ship origin (center):\n> " );
+            printf( "\nCoordinates (x y) considering the 5x5 ship box origin (center):\n> " );
 
             
             scanf( " (%hhd %hhd)", &pos.x, &pos.y );                                                            
@@ -233,4 +238,161 @@ void place_ship( Board* player_board, Board* ship_board ){
 
 
 
+
+
+
+
+
+
+
+
+Board* build_ship_test( uchar idx ){
+    Board* tmp_board = init_board( MAX_SHIP_SIZE );
+
+    uchar k = 0,
+        pieces = 0;
+    
+    for( uchar i = 0; i < MAX_SHIP_SIZE; i++ ){
+        for( uchar j = 0; j < MAX_SHIP_SIZE; j++ ){
+            
+            bool piece = settings -> ship_shape[ idx ][ k ];
+
+            tmp_board -> matrix[ i ][ j ].ship = ( piece ) ? idx : 0 ;
+
+            if( piece ){
+                pieces++;
+            }
+            
+            k++;
+        }
+    }
+
+    tmp_board -> idx = idx;
+    tmp_board -> ships[ idx ] -> size = pieces;
+  
+    return tmp_board;
+}
+
+
+void place_ship_test( Board* player_board, Board* ship_board ){
+  
+    uchar n = settings -> board_size;
+    bool placed = false;
+
+    printf( "\nEnter coordinates (x y) to place the ship:\n" );
+
+    uchar z;
+
+    do{
+        Board* tmp_board = init_board( n );
+
+        Pos pos;
+        pos.x = 3;
+        pos.y = 3;
+
+
+        bool overlap = true;
+               
+        do{
+            
+            copy_board( tmp_board, player_board );
+
+            uchar span = ( MAX_SHIP_SIZE / 2 );
+
+            // Temp. place before confirmation
+            for( uchar i = 0; i < MAX_SHIP_SIZE; i++ ){
+                for( uchar j = 0; j < MAX_SHIP_SIZE; j++ ){
+
+                    if( ship_board -> matrix[ i ][ j ].ship != 0 ){
+                        uchar x = i + pos.x - 1 - span;
+                        uchar y = j + pos.y - 1 - span;
+                        tmp_board -> matrix[ x ][ y ].ship = 1;
+                    }
+                
+                }
+            }
+
+        
+            print_board( tmp_board, false );
+
+            char msg[] = "\nPlace the ship on board:\n"     \
+                "\n1 - Up\n2 - Down\n3 - Left\n4 - Right"   \
+                "\n5 - Rotate (clockwise)\n6 - Done\n> ";
+            
+            printf( msg );
+            
+            scanf( " %hhd", &z );                                                          
+
+
+            switch( z ){
+            case 1:
+                if( pos.x > 3 )
+                    pos.x--;
+                else
+                    shift_board( ship_board, z );
+                break;
+                
+            case 2:
+                if( pos.x < settings -> board_size - 2 )
+                    pos.x++;
+                else
+                    shift_board( ship_board, z );
+                break;
+                
+            case 3:
+                if( pos.y > 3)
+                    pos.y--;
+                else
+                    shift_board( ship_board, z );
+                break;
+
+            case 4:
+                if( pos.y < settings -> board_size - 2 )
+                    pos.y++;
+                else
+                    shift_board( ship_board, z );
+                break;
+                
+            case 5:
+                rotate_board( ship_board );
+                break;
+
+            default:
+                break;
+                
+            }
+
+
+            if( !ship_overlap( player_board, ship_board, pos ) ){
+                overlap = false;
+            }else{
+                overlap = true;
+                char msg[] = "\nThere is a ship placed in this position already.\n" \
+                    "Choose a different place.\n";
+                printf( msg );
+            }
+
+
+            
+        }while( z != 6 || overlap );
+
+
+        // Placement on player -> board
+        copy_board( player_board, tmp_board );
+
+        uchar idx = ship_board -> idx;
+            
+        player_board -> idx = idx;    
+        player_board -> ships_alive++;
+        player_board -> ships[ idx ] -> size = ship_board -> ships[ idx ] -> size;
+            
+        placed = true;
+        
+
+        free_board( tmp_board );
+    }while( !placed );
+
+
+    return;
+}
 

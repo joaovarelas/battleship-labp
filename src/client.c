@@ -19,6 +19,7 @@ void ascii_art(){
 
 int main( int argc, char** argv ){
     
+    init_settings();
     load_settings();
     
     uchar x;

@@ -2,18 +2,21 @@
 #include <stdio.h>
 
 
-void load_settings(){
-
+void init_settings(){
     settings = ( Settings* ) malloc ( sizeof( Settings ) );
-    
+    return;
+}
+
+void load_settings(){
+ 
     FILE* fp;
     fp = fopen(FILENAME, "r");
     if(!fp){
-        printf("Settings file not found.\n");
+        printf( "\nSettings file not found.\n" );
         exit(1);
     }
   
-    char line[MAX_LINE_SIZE];
+    char line[ MAX_LINE_SIZE ];
     
     fgets( line, sizeof( line ), fp );
     settings -> board_size = atoi( line );
@@ -41,9 +44,15 @@ void load_settings(){
             j++;
         }
         
-        settings -> ship_shape[ i ][ 25 ] = '\0';
+        settings -> ship_shape[ i ][ MAX_SHIP_SQUARE ] = '\0';
     }
 
+    return;
+}
+
+
+void write_settings(){
+    /* TODO */
     return;
 }
 
@@ -56,14 +65,60 @@ void change_settings(){
         "\n\nDo you want to change settings?" \
         "\n1 - Yes\n2 - No\n> ";
 
+    /* TODO: print current ships */ 
+
     printf( msg, settings -> board_size, settings -> num_ships );
     
     uchar x;
     scanf(" %hhd", &x);
 
+    //uchar new_board_size;
+    //uchar new_num_ships;
+    //bool new_ship_shape[ MAX_SHIPS( MAX_BOARD_SIZE ) + 1 ][ MAX_SHIP_SQUARE ];
+    
     switch( x ){
     case 1:
-        // Change
+        {
+            // Change
+
+            do{
+                printf( "\nNew board size (between 20 and 40):\n> " );
+                scanf( " %hhd", &settings -> board_size );
+            }while( settings -> board_size < 20 || settings -> board_size > 40 );
+
+            do{
+                printf( "\nNew number of ships (between 1 and %hhd):\n> ",
+                        MAX_SHIPS( settings -> board_size ) );
+            
+                scanf( " %hhd", &settings -> num_ships );
+            }while( settings -> num_ships < 1
+                    || settings -> num_ships > MAX_SHIPS( settings -> board_size ) );
+
+            
+            for( uchar i = 1; i <= settings -> num_ships; i++ ){
+
+                printf( "\nBuilding new ship #%hhd\n",  i );
+                build_new_ship( i );
+               
+            }
+            
+            printf( "\nSave new settings to file?\n1 - Yes\n2 - No\n> " );
+            scanf( " %hhd", &x );
+
+            switch( x ){
+            case 1:
+
+                write_settings();
+                
+                break;
+            case 2:
+                break;
+            default:
+                break;
+            }
+            
+            
+        }
         break;
     case 2:
         // Go back
@@ -71,61 +126,61 @@ void change_settings(){
     default:
         break;
     }
-          
+    
     return;
 }
 
 
 
-/*
 
-// DRAW SHIPS FORMAT
+void build_new_ship( uchar idx ){
+
+    Board* tmp_board = init_board( MAX_SHIP_SIZE );
+    uchar pieces = 0;
 
 
-Board* build_ship( ){
-
-Board* tmp_board = init_board( MAX_SHIP_SIZE );
-uchar pieces = 0;
-
-// constant index. 1 ship only
-uchar idx = 1;
     
-printf( "\nEnter coordinates (x y) to place one piece (0 0 to finish):\n" );
+    printf( "\nEnter coordinates (x y) to place one piece:\n" );
 
-Pos pos;
+    Pos pos;
     
-do{
-print_board( tmp_board, false );
+    do{
+        print_board( tmp_board, false );
 
-printf( "\nCoordinates (x y):\n> " );
-scanf( " %hhd %hhd", &pos.x, &pos.y );
+        printf( "\nCoordinates (x y) to place one piece. (0 0) to finish:\n> " );
+        scanf( " (%hhd %hhd)", &pos.x, &pos.y );
 
-// TODO: Check adjacent pixels
+        // TODO: Check adjacent pixels
         
-if( pos.x > 0 && pos.y > 0 ){
-tmp_board -> matrix[ pos.x - 1 ][ pos.y - 1 ].ship = idx;
-pieces++;
-}
+        if( pos.x > 0 && pos.y > 0 ){
+            
+            Cell* cell = &tmp_board -> matrix[ pos.x - 1 ][ pos.y - 1 ];
+
+            if( cell -> ship == 0 ){
+                cell -> ship = 1;
+                pieces++;
+            }else{
+                cell -> ship = 0;
+                pieces--;
+            }
+        }
         
-}while( pos.x > 0 && pos.y > 0 );
+    }while( pos.x > 0 && pos.y > 0 );
 
-tmp_board -> ships[ idx ] = init_ship( pos, pieces );
-
-uchar z;
-do {
-
-print_board( tmp_board, false );
-
-printf( "\nDo you want to rotate it? (clockwise):\n\n1 - Yes\n2 - No\n> " );
-
-scanf( " %hhd", &z );
-
-if( z == 1 ){
-rotate_board( tmp_board );
-}
-        
-} while( z == 1 );
+    uchar k = 0;
     
-return tmp_board;
+    for( uchar x = 0; x < MAX_SHIP_SIZE; x++ ){
+        for( uchar y = 0; y < MAX_SHIP_SIZE; y++ ){
+
+            if( tmp_board -> matrix[ x ][ y ].ship != 0 ){
+                settings -> ship_shape[ idx ][ k ] = true;
+            }else{
+                settings -> ship_shape[ idx ][ k ] = false;
+            }
+
+            k++;
+        }
+    }
+    
+    return;
 }
-*/

@@ -19,4 +19,8 @@ void free_player( Player* player );
 Board* build_ship( uchar idx );
 void place_ship( Board* player_board, Board* ship_board );
 
+
+Board* build_ship_test( uchar idx );
+void place_ship_test( Board* player_board, Board* ship_board );
+
 #endif
