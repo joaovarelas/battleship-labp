@@ -1,7 +1,6 @@
-#ifndef __game__
-#define __game__
+#ifndef GAME_H
+#define GAME_H
 
-#include "board.h"
 #include "player.h"
 
 void play_by_turns();

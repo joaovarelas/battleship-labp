@@ -1,3 +1,4 @@
+#include "config.h"
 #include "game.h"
 
 void play_by_turns(){
@@ -67,28 +68,15 @@ void start_game( Player* player1, Player* player2 ){
             continue;
         }
 
-        //printf( "\nDEBUG: x %hhd y %hhd", pos.x, pos.y );
         
         if( target -> ship > 0 ){
 
 
             uchar ship_idx =  target -> ship;
             Ship* enemy_ship = enemy_board -> ships[ ship_idx ];
-
-            /*
-            printf( "\nDEBUG: target->ship %hhd", target -> ship );
-            printf( "\nDEBUG: enemy_ship->size %hhd", enemy_ship -> size );
-            printf( "\nDEBUG: target->state %hhd", target -> state );
-            printf( "\nDEBUG: enemy_ship->shotcount %hhd", enemy_ship -> shot_count );
-            */
             
             target -> state = HIT;
             enemy_ship -> shot_count++;
-
-            /*
-            printf( "\nDEBUG: target->state %hhd", target -> state );
-            printf( "\nDEBUG: enemy_ship->shotcount %hhd", enemy_ship -> shot_count );
-            */
             
             if( enemy_ship -> shot_count == enemy_ship -> size ){
                 enemy_ship -> alive = false;
@@ -98,8 +86,6 @@ void start_game( Player* player1, Player* player2 ){
             if( enemy_board -> ships_alive == 0 ){
                 game_finished = true;
             }
-
-            //printf( "\nDEBUG: enemy_board->ships_alive %hhd", enemy_board -> ships_alive );
             
             print_board( enemy_board, true );
             printf( "\nHIT!\n" );

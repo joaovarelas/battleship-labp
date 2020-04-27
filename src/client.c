@@ -1,6 +1,6 @@
-#include "game.h"
+#include "config.h"
 #include "settings.h"
-
+#include "game.h"
 
 void ascii_art(){
     char logo[] =
@@ -21,6 +21,7 @@ int main( int argc, char** argv ){
     
     init_settings();
     load_settings();
+    srand(time(NULL));
     
     uchar x;
 
@@ -41,10 +42,13 @@ int main( int argc, char** argv ){
         
         case 1:
             {
+                /*
                 char menu[] =
                     "\n1 - Play By Turns\n" \
                     "2 - Local Multiplayer\n" \
                     "3 - Internet Multiplayer\n> ";
+                */
+                char menu[] = "\n1 - Play By Turns\n";
                 
                 printf( "%s", menu );
 

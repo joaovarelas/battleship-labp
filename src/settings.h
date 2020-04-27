@@ -1,14 +1,11 @@
-#ifndef __settings__
-#define __settings__
+#ifndef SETTINGS_H
+#define SETTINGS_H
 
-#include "defines.h"
-#include "board.h"
-
-typedef struct {
+typedef struct _Settings {
     
     uchar board_size;
     uchar num_ships;
-    bool ship_shape[65][25];
+    bool ship_shape[ MAX_SHIPS( MAX_BOARD_SIZE ) + 1 ][ MAX_SHIP_SQUARE ];
     
 } Settings;
 

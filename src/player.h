@@ -1,9 +1,12 @@
-#ifndef __player__
-#define __player__
+#ifndef PLAYER_H
+#define PLAYER_H
 
+#include "config.h"
 #include "board.h"
+#include "settings.h"
+#include "ship.h"
 
-typedef struct {
+typedef struct _Player {
 
     char* name;
     Board* board;
@@ -16,11 +19,5 @@ Player* init_player( char* name );
 Player* setup_player();
 void free_player( Player* player );
 
-Board* build_ship( uchar idx );
-void place_ship( Board* player_board, Board* ship_board );
-
-
-Board* build_ship_test( uchar idx );
-void place_ship_test( Board* player_board, Board* ship_board );
 
 #endif
