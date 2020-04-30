@@ -20,7 +20,8 @@
 
 #define BOARD_SPAN 2
 #define MAX_LINE_SIZE 32
-#define FILENAME "settings/settings"
+#define SETTINGS_FILE "settings/settings"
+#define SETTINGS_BACKUP "settings/settings_default"
 
 #define UP 1
 #define DOWN 2
@@ -28,10 +29,14 @@
 #define RIGHT 4
 #define ROTATE 5
 
+#define VERTICAL( D ) ( D == UP || D == DOWN )
+#define HORIZONTAL( D ) ( D == LEFT || D == RIGHT )
+
 
 
 
 // Forward declarations
+// Prevent circular dependency
 typedef struct _Player Player;
 typedef struct _Settings Settings;
 typedef struct _Pos Pos;
@@ -39,6 +44,8 @@ typedef struct _Ship Ship;
 typedef struct _Cell Cell;
 typedef struct _Board Board;
 
+// Byte (0 - 255)
 typedef unsigned char uchar;
+
 
 #endif

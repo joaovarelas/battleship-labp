@@ -1,0 +1,11 @@
+
+- build_ship.inp: Apresenta menu para desenhar um novo barco, colocando pixeis adjacentes 1 a 1.
+
+- check_overlap_ship.inp: Coloca 2 barcos na mesma posição de modo a existir sobreposição, sendo apresentada mensagem de erro.
+
+- game_play_custom_board.inp: Constrói o mesmo tabuleiro para os 2 jogadores e inicia o jogo. Joga todas as coordenadas corretas. Ganha o jogador que começa.
+
+- gen_custom_board.inp: Gera um tabuleiro com barcos colocados em posições definidas no ficheiro.
+
+- gen_rand_board.inp: Gera um tabuleiro com barcos em posições aleatórias.
+

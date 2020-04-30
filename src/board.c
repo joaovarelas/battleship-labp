@@ -82,7 +82,7 @@ void print_board( Board* board, bool game_mode ){
             if( game_mode ){
 
                 switch( board -> matrix[ i ][ j ].state ){
-                case MISSED:
+                case MISS:
                     printf( "•" );
                     break;
                 case UNKNOWN:
@@ -131,28 +131,26 @@ void print_board( Board* board, bool game_mode ){
 }
 
 
-
+// Temporary placement before final confirmation
 void copy_tmp_board( Pos pos, Board* player_board, Board* ship_board, Board* tmp_board ){
 
     copy_board( tmp_board, player_board );
 
     uchar span = ( MAX_SHIP_SIZE / 2 );
 
-    // Temp. place before confirmation
     for( uchar i = 0; i < MAX_SHIP_SIZE; i++ ){
         for( uchar j = 0; j < MAX_SHIP_SIZE; j++ ){
-
-            if( ship_board -> matrix[ i ][ j ].ship != 0 ){
+            uchar ship_idx = ship_board -> matrix[ i ][ j ].ship;
+            
+            if( ship_idx != 0 ){
                 uchar x = i + pos.x - 1 - span;
                 uchar y = j + pos.y - 1 - span;
-                tmp_board -> matrix[ x ][ y ].ship = 1;
+                tmp_board -> matrix[ x ][ y ].ship = ship_idx;
             }
                 
         }
     }
    
-
-
     return;
 }
 
@@ -179,98 +177,61 @@ void rotate_board( Board* board ){
 }
 
 
-// Shift cells inside board
-void shift_board( Board* board, uchar orientation ){
-
- 
-    if( orientation == UP || orientation == DOWN ){
-        // Vertical
+// Shift cells inside ship board
+void shift_board( Board* board, uchar move ){
   
-        uchar x = ( orientation == 1 ) ? 0 : MAX_SHIP_SIZE - 1;
-       
-        for( uchar i = 0; i < MAX_SHIP_SIZE; i++){
-            if( board -> matrix[ x ][ i ].ship != 0 ){
-                return;
-            }
-        }
+    uchar x, y, w, z;
+    uchar k = MAX_SHIP_SIZE - 1;
+    int delta = ( move == UP || move == LEFT ) ? 1 : -1;
+    uchar border = ( move == UP || move == LEFT ) ? 0 : k;
 
-       
-        if( orientation == UP ){
-            // UP
 
-            for( uchar i = 0; i < MAX_SHIP_SIZE - 1; i++){
-                for( uchar j = 0; j < MAX_SHIP_SIZE; j++){
-                    board -> matrix[ i ][ j ].ship = board -> matrix[ i + 1 ][ j ].ship;
-                }
-            }
-
-            for( uchar j = 0; j < MAX_SHIP_SIZE; j++)
-                board -> matrix[ MAX_SHIP_SIZE - 1 ][ j ].ship = 0;
-            
-        }else if( orientation == DOWN ){
-            // DOWN
-            
-            for( uchar i = MAX_SHIP_SIZE - 1; i > 0; i--){
-                for( uchar j = 0; j < MAX_SHIP_SIZE; j++){
-                    board -> matrix[ i ][ j ].ship = board -> matrix[ i - 1 ][ j ].ship;
-                }
-            }
-
-            for( uchar j = 0; j < MAX_SHIP_SIZE; j++)
-                board -> matrix[ 0 ][ j ].ship = 0;
-            
-        }
+    // Check pieces at border limit
+    for( uchar i = 0; i <= k; i++ ){
         
-     
-    }else if( orientation == LEFT || orientation == RIGHT ){
-        // Horizontal
-        
-        uchar y = ( orientation == 3 ) ? 0 : MAX_SHIP_SIZE - 1;
-       
-        for( uchar i = 0; i < MAX_SHIP_SIZE; i++){
-            if( board -> matrix[ i ][ y ].ship != 0 ){
-                return;
-            }
-        }
+        x = VERTICAL( move ) ? border : i;
+        y = HORIZONTAL( move ) ? border : i;
 
-        if( orientation == LEFT ){
-            // LEFT
-            
-            for( uchar j = 0; j < MAX_SHIP_SIZE - 1; j++){
-                for( uchar i = 0; i < MAX_SHIP_SIZE; i++){
-                    board -> matrix[ i ][ j ].ship = board -> matrix[ i ][ j + 1 ].ship;
-                }
-            }
-
-            for( uchar i = 0; i < MAX_SHIP_SIZE; i++)
-                board -> matrix[ i ][ MAX_SHIP_SIZE - 1 ].ship = 0;
-                        
-        }else if( orientation == RIGHT ){
-            // RIGHT
-
-            for( uchar j = MAX_SHIP_SIZE - 1; j > 0; j--){
-                for( uchar i = 0; i < MAX_SHIP_SIZE; i++){
-                    board -> matrix[ i ][ j ].ship = board -> matrix[ i ][ j - 1 ].ship;
-                }
-            }
-
-            for( uchar i = 0; i < MAX_SHIP_SIZE; i++)
-                board -> matrix[ i ][ 0 ].ship = 0;
-            
-        }
-        
-    }else{
-        // Unknown 
+        // Cant move if ship is already on matrix limit
+        if( board -> matrix[ x ][ y ].ship != 0 )
+            return;
     }
-    
-    
+
+
+    // Move pixels considering direction
+    for( uchar i = 0; i < k; i++){
+        for( uchar j = 0; j <= k; j++){
+
+            x = VERTICAL( move ) ? ( (move == UP) ? i : k-i ) : j;
+            y = HORIZONTAL( move ) ? ( (move == LEFT) ? i : k-i ) : j;
+            w = VERTICAL( move ) ? ( (move == UP) ? i + delta : k-1-i ) : j;
+            z = HORIZONTAL( move ) ? ( (move == LEFT) ? i + delta : k-1-i ) : j;
+
+            // Move pixel
+            board -> matrix[ x ][ y ].ship = board -> matrix[ w ][ z ].ship;
+            
+        }
+    }
+
+    // Set last border to 0's
+    for( uchar i = 0; i < MAX_SHIP_SIZE; i++){
+       
+        x = VERTICAL( move ) ? ( (move == UP) ? k : 0 ) : i ;
+        y = HORIZONTAL( move ) ? ( (move == LEFT) ? k : 0 ) : i ;
+
+        // Set to zero
+        board -> matrix[ x ][ y ].ship = 0;
+    }
+
     return;
 }
+
 
 
 // Copy board
 void copy_board( Board* dst, Board* src ){
 
+    // Copy matrix
     uchar n = dst -> size; 
     for( uchar i = 0; i < n; i++){
         for( uchar j = 0; j < n; j++){
@@ -278,12 +239,15 @@ void copy_board( Board* dst, Board* src ){
         }
     }
 
+    // Copy idx
     dst -> idx = src -> idx;
 
+    // Copy ships
     for( uchar idx = 1; idx <= MAX_SHIPS( settings -> board_size ) ; idx++ ){
         copy_ship( dst -> ships[ idx ], src -> ships[ idx ] );
     }
 
+    // Copy no. of alive ships
     dst -> ships_alive = src -> ships_alive;
 }
 
@@ -298,7 +262,9 @@ bool ship_overlap( Board* dst, Board* src, Pos pos ){
         
         jj = 0;
         for( uchar j = pos.y - 1 - BOARD_SPAN; j <= pos.y - 1 + BOARD_SPAN; j++){
-            
+
+            // Overlap detected if there is a pixel of another ship
+            // where we want to place the ship
             if( src -> matrix[ ii ][ jj ].ship != 0
                 && dst -> matrix[ i ][ j ].ship != 0 ){
                 return true;

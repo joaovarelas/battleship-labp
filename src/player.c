@@ -23,7 +23,7 @@ void free_player( Player* player ){
     return;
 }
 
-
+// Setup player's name and board configuration
 Player* setup_player( ){
 
 
@@ -42,8 +42,6 @@ Player* setup_player( ){
 
     uchar i = 1;
     while( i <= settings -> num_ships ) {
-
-        //printf( "\nBuilding Ship #%hhd\n", i );
                 
         Board* ship = build_ship( i );
 
@@ -62,7 +60,11 @@ Player* setup_player( ){
     // Print final board to player
     printf( "\nFinal board of player \"%s\":\n", player -> name );
     print_board( player -> board, false );
-            
+
+    // Print some spaces to hide board
+    uchar n = settings -> board_size;
+    while( n-- > 0 )
+        printf( "\n" );
     return player;
 }
 

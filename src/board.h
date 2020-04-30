@@ -3,7 +3,7 @@
 
 #include "ship.h"
 
-typedef enum { MISSED = -1, UNKNOWN = 0, HIT = 1 } State;
+typedef enum { MISS = -1, UNKNOWN = 0, HIT = 1 } State;
               
 typedef struct _Cell {
     
@@ -23,13 +23,17 @@ typedef struct _Board {
 
 
 Board* init_board( uchar n );
-void print_board( Board* board, bool game_mode );
-void rotate_board( Board* board );
-void shift_board( Board* board, uchar orientation );
+
 void copy_board( Board* dst, Board* src );
 void copy_tmp_board( Pos pos, Board* player_board, Board* ship_board, Board* tmp_board );
-void free_board( Board* board );
+
 bool ship_overlap( Board* dst, Board* src, Pos pos );
+
+void rotate_board( Board* board );
+void shift_board( Board* board, uchar move );
+
+void print_board( Board* board, bool game_mode );
+void free_board( Board* board );
 
 #endif
 

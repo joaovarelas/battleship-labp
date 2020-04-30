@@ -17,7 +17,7 @@ typedef struct _Player {
 
 Player* init_player( char* name );
 Player* setup_player();
-void free_player( Player* player );
 
+void free_player( Player* player );
 
 #endif
