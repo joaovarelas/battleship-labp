@@ -1,6 +1,7 @@
 #include "config.h"
 #include "game.h"
 #include "random.h"
+#include "quadtree.h"
 
 void play_by_turns(){
 
@@ -21,7 +22,7 @@ void play_by_turns(){
 
 void start_game( Player* player1, Player* player2 ){
 
-    uchar n = settings -> board_size;
+    byte n = settings -> board_size;
     bool game_finished = false;
     bool player1_turn = rand_bool();
 
@@ -37,21 +38,21 @@ void start_game( Player* player1, Player* player2 ){
 
 
     Player* player;
-    Player* enemy; 
+    Player* enemy;
     
     do{
         
         char msg[] = "\nIt's \"%s\" turn.\nCoordinates (x y) to fire:\n> ";
 
-        player = player1_turn? player1 : player2;
-        enemy = player1_turn ? player2 : player1;
+        player = player1_turn ? player1 : player2;
+        enemy =  player1_turn ? player2 : player1;
         
         print_board( enemy -> board, true );
         printf( msg, player -> name );
       
         
         Pos pos;
-        scanf( " (%hhd %hhd)", &pos.x, &pos.y );
+        scanf( " (%hhu %hhu)", &pos.x, &pos.y );
 
         // Check border limits
         if( ( pos.x < 1 || pos.x > n ) || ( pos.y < 1 || pos.y > n ) ){
@@ -62,23 +63,30 @@ void start_game( Player* player1, Player* player2 ){
 
         // Set enemy_board depending on current player turn 
         Board* enemy_board = enemy -> board;
-        
 
         // Set target cell considering (x y)
-        Cell* target = &enemy_board -> matrix[ pos.x - 1][ pos.y - 1];
-
-
-        // Must play on cells that were not played before
-        if( target -> state != UNKNOWN ){
-            printf( "\nAlready played in (%hhd %hhd). Try again.\n", pos.x, pos.y );
-            continue;
+        QNode* node = get_node( enemy_board -> qtree, pos );
+        Cell* target;
+        
+        if( node != NULL ){
+            target = &node -> cell;
+        }else{
+            init_cell( target, 0, MISS );
         }
+               
+        // Must play on cells that were not played before
+        /*
+          if( ... ){
+          printf( "\nAlready played in (%hhu %hhu). Try again.\n", pos.x, pos.y );
+          continue;
+          }
+        */
 
-
+    
         // Ship found at (x y). HIT!
         if( target -> ship > 0 ){
 
-            uchar ship_idx =  target -> ship;
+            byte ship_idx =  target -> ship;
             Ship* enemy_ship = enemy_board -> ships[ ship_idx ];
             
             target -> state = HIT;

@@ -1,29 +1,36 @@
 #include "board.h"
 #include "settings.h"
+#include "quadtree.h"
 
-Board* init_board( uchar n ){
+Board* init_board( byte n ){
     
     Board* board = ( Board* ) malloc ( sizeof( Board ) );
-
     board -> size = n;
+
+    Pos p1, p2;
+    init_pos( &p1, 1, 1 );
+    init_pos( &p2, n*n, n*n );
+
     board -> matrix = ( Cell** ) malloc ( n * sizeof( Cell* ) );
+    board -> qtree = init_qtree( p1, p2 );
+    
     board -> ships = ( Ship** ) malloc ( ( 1 + MAX_SHIPS( settings -> board_size ) ) * sizeof( Ship* ) );
     board -> idx = 0;
     board -> ships_alive = 0;
 
-    for( uchar i = 0; i < n ; i++ ){
+    
+    for( byte i = 0; i < n ; i++ ){
         
         board -> matrix[ i ] = ( Cell* ) malloc ( n * sizeof( Cell ) );
         
-        for( uchar j = 0; j < n; j++ ){
+        for( byte j = 0; j < n; j++ ){
             
-            board -> matrix[ i ][ j ].ship = 0;
-            board -> matrix[ i ][ j ].state = UNKNOWN;
-
+            init_cell( &board -> matrix[ i ][ j ], 0, UNKNOWN );
         }
+                       
     }
-
-    for( uchar i = 1; i <= MAX_SHIPS( settings -> board_size ) ; i++ ){
+    
+    for( byte i = 1; i <= MAX_SHIPS( settings -> board_size ) ; i++ ){
         board -> ships[ i ] = init_ship();
     }
     
@@ -31,18 +38,16 @@ Board* init_board( uchar n ){
 }
 
 
+
 // Send it to the void
 void free_board( Board* board ){
 
-    uchar i;
+    if( board -> matrix != NULL )
+        free_matrix( board );
 
-    for( i = 0; i < board -> size; i++ ){
-        free( board -> matrix[ i ] );    
-    }
-    free( board -> matrix );
+    free_qtree( board -> qtree );
 
-    
-    for( i = 1; i <= MAX_SHIPS( board -> size ); i++ ){
+    for( byte i = 1; i <= MAX_SHIPS( board -> size ); i++ ){
         free( board -> ships[ i ] );
     }
     free( board -> ships );
@@ -52,11 +57,21 @@ void free_board( Board* board ){
     return;
 }
 
+void free_matrix( Board* board ){
+    
+    for( byte i = 0; i < board -> size; i++ ){
+        free( board -> matrix[ i ] );    
+    }
+    free( board -> matrix );
+
+    return;
+}
+
 
 void print_board( Board* board, bool game_mode ){
 
-    uchar n = board -> size;
-    uchar i, j;
+    byte n = board -> size;
+    byte i, j;
 
     // X Lines
     // Y Columns
@@ -77,37 +92,11 @@ void print_board( Board* board, bool game_mode ){
         for( j = 0 ; j < n ; j++ ){
             printf( " " );
 
+            Pos pos;
+            init_pos( &pos, i, j );
 
-	    // Print by "state" or Print by "ship"
-            if( game_mode ){
-
-                switch( board -> matrix[ i ][ j ].state ){
-                case MISS:
-                    printf( "•" );
-                    break;
-                case UNKNOWN:
-                    printf( " " );
-                    break;
-                case HIT:
-                    printf( "x" );
-                    break;
-                default:
-                    break;
-                }
-
-            } else {
-                
-                switch( board -> matrix[ i ][ j ].ship ){
-                case 0:
-                    printf( " " );
-                    break;
-                default:
-                    printf( "■" );
-                    break;
-                }
+            print_cell( board, pos, game_mode );
                             
-            }
-            
             printf( " │" );
         }
 
@@ -131,20 +120,77 @@ void print_board( Board* board, bool game_mode ){
 }
 
 
+void print_cell( Board* board, Pos pos, bool game_mode ){
+
+    Cell cell;
+
+    // Print quadtree if it has nodes, else print matrix
+    if( !board -> qtree -> empty ){
+        pos.x++;
+        pos.y++;
+        QNode* node = get_node( board -> qtree, pos );
+        if( node != NULL ){
+            cell = node -> cell;
+        }else{
+            init_cell( &cell, 0, UNKNOWN );
+        }
+        
+       
+    }else{
+
+        cell = board -> matrix[ pos.x ][ pos.y ];
+    }
+    
+    
+    // Print by "state" or Print by "ship"
+    if( game_mode ){
+                
+        switch( cell.state ){
+        case MISS:
+            printf( "•" );
+            break;
+        case UNKNOWN:
+            printf( " " );
+            break;
+        case HIT:
+            printf( "x" );
+            break;
+        default:
+            break;
+        }
+                 
+    } else {
+                    
+        switch( cell.ship ){
+        case 0:
+            printf( " " );
+            break;
+        default:
+            printf( "■" );
+            break;
+        }
+                    
+    }
+
+    return;
+}
+
+
+
 // Temporary placement before final confirmation
 void copy_tmp_board( Pos pos, Board* player_board, Board* ship_board, Board* tmp_board ){
 
     copy_board( tmp_board, player_board );
 
-    uchar span = ( MAX_SHIP_SIZE / 2 );
+    byte span = ( MAX_SHIP_SIZE / 2 );
 
-    for( uchar i = 0; i < MAX_SHIP_SIZE; i++ ){
-        for( uchar j = 0; j < MAX_SHIP_SIZE; j++ ){
-            uchar ship_idx = ship_board -> matrix[ i ][ j ].ship;
+    for( byte i = 0; i < MAX_SHIP_SIZE; i++ ){
+        for( byte j = 0; j < MAX_SHIP_SIZE; j++ ){
+            byte ship_idx = ship_board -> matrix[ i ][ j ].ship;
             
             if( ship_idx != 0 ){
-                uchar x = i + pos.x - 1 - span;
-                uchar y = j + pos.y - 1 - span;
+                byte x = i + pos.x - 1 - span;
+                byte y = j + pos.y - 1 - span;
                 tmp_board -> matrix[ x ][ y ].ship = ship_idx;
             }
                 
@@ -159,12 +205,12 @@ void copy_tmp_board( Pos pos, Board* player_board, Board* ship_board, Board* tmp
 // In-place n-cycle approach, swapping ring elements
 void rotate_board( Board* board ){
     
-    uchar n = board -> size;
+    byte n = board -> size;
     
-    for( uchar i = 0; i < n / 2; i++){
-        for( uchar j = i; j < n - 1 - i; j++){
+    for( byte i = 0; i < n / 2; i++){
+        for( byte j = i; j < n - 1 - i; j++){
 
-            uchar tmp = board -> matrix[ i ][ j ].ship;
+            byte tmp = board -> matrix[ i ][ j ].ship;
             
             board -> matrix[ i ][ j ].ship =  board -> matrix[ n - 1 - j ][ i ].ship;
             board -> matrix[ n - 1 - j ][ i ].ship = board -> matrix[ n - 1 - i ][ n - 1 - j ].ship;
@@ -178,18 +224,18 @@ void rotate_board( Board* board ){
 
 
 // Shift cells inside ship board
-void shift_board( Board* board, uchar move ){
+void shift_board( Board* board, byte move ){
   
-    uchar x, y, w, z;
-    uchar k = MAX_SHIP_SIZE - 1;
-    int delta = ( move == UP || move == LEFT ) ? 1 : -1;
-    uchar border = ( move == UP || move == LEFT ) ? 0 : k;
+    byte x, y, w, z;
+    byte k = MAX_SHIP_SIZE - 1;
+    int delta =   ( move == UP || move == LEFT ) ? 1 : -1;
+    byte border = ( move == UP || move == LEFT ) ? 0 : k;
 
 
     // Check pieces at border limit
-    for( uchar i = 0; i <= k; i++ ){
+    for( byte i = 0; i <= k; i++ ){
         
-        x = VERTICAL( move ) ? border : i;
+        x =   VERTICAL( move ) ? border : i;
         y = HORIZONTAL( move ) ? border : i;
 
         // Cant move if ship is already on matrix limit
@@ -199,12 +245,12 @@ void shift_board( Board* board, uchar move ){
 
 
     // Move pixels considering direction
-    for( uchar i = 0; i < k; i++){
-        for( uchar j = 0; j <= k; j++){
+    for( byte i = 0; i < k; i++){
+        for( byte j = 0; j <= k; j++){
 
-            x = VERTICAL( move ) ? ( (move == UP) ? i : k-i ) : j;
+            x =   VERTICAL( move ) ?   ( (move == UP) ? i : k-i ) : j;
             y = HORIZONTAL( move ) ? ( (move == LEFT) ? i : k-i ) : j;
-            w = VERTICAL( move ) ? ( (move == UP) ? i + delta : k-1-i ) : j;
+            w =   VERTICAL( move ) ?   ( (move == UP) ? i + delta : k-1-i ) : j;
             z = HORIZONTAL( move ) ? ( (move == LEFT) ? i + delta : k-1-i ) : j;
 
             // Move pixel
@@ -214,9 +260,9 @@ void shift_board( Board* board, uchar move ){
     }
 
     // Set last border to 0's
-    for( uchar i = 0; i < MAX_SHIP_SIZE; i++){
+    for( byte i = 0; i < MAX_SHIP_SIZE; i++){
        
-        x = VERTICAL( move ) ? ( (move == UP) ? k : 0 ) : i ;
+        x =   VERTICAL( move ) ?   ( (move == UP) ? k : 0 ) : i ;
         y = HORIZONTAL( move ) ? ( (move == LEFT) ? k : 0 ) : i ;
 
         // Set to zero
@@ -232,9 +278,9 @@ void shift_board( Board* board, uchar move ){
 void copy_board( Board* dst, Board* src ){
 
     // Copy matrix
-    uchar n = dst -> size; 
-    for( uchar i = 0; i < n; i++){
-        for( uchar j = 0; j < n; j++){
+    byte n = dst -> size; 
+    for( byte i = 0; i < n; i++){
+        for( byte j = 0; j < n; j++){
             dst -> matrix[ i ][ j ].ship = src -> matrix[ i ][ j ].ship;
         }
     }
@@ -243,7 +289,7 @@ void copy_board( Board* dst, Board* src ){
     dst -> idx = src -> idx;
 
     // Copy ships
-    for( uchar idx = 1; idx <= MAX_SHIPS( settings -> board_size ) ; idx++ ){
+    for( byte idx = 1; idx <= MAX_SHIPS( settings -> board_size ) ; idx++ ){
         copy_ship( dst -> ships[ idx ], src -> ships[ idx ] );
     }
 
@@ -255,13 +301,13 @@ void copy_board( Board* dst, Board* src ){
 // Check ship overlap
 bool ship_overlap( Board* dst, Board* src, Pos pos ){
 
-    uchar ii = 0,
+    byte ii = 0,
         jj = 0;
     
-    for( uchar i = pos.x - 1 - BOARD_SPAN; i <= pos.x - 1 + BOARD_SPAN; i++){
+    for( byte i = pos.x - 1 - BOARD_SPAN; i <= pos.x - 1 + BOARD_SPAN; i++){
         
         jj = 0;
-        for( uchar j = pos.y - 1 - BOARD_SPAN; j <= pos.y - 1 + BOARD_SPAN; j++){
+        for( byte j = pos.y - 1 - BOARD_SPAN; j <= pos.y - 1 + BOARD_SPAN; j++){
 
             // Overlap detected if there is a pixel of another ship
             // where we want to place the ship
@@ -280,3 +326,27 @@ bool ship_overlap( Board* dst, Board* src, Pos pos ){
 }
 
 
+
+
+void matrix_to_qtree( Board* board ){
+
+    byte n = board -> size;
+
+    for( byte i = 0; i < n; i++ ){
+        for( byte j = 0; j < n; j++ ){
+
+            Cell cell = board -> matrix[ i ][ j ];
+            
+            if( cell.ship != 0 ){
+
+                Pos pos;
+                init_pos( &pos, i + 1, j + 1 );
+
+                insert_node( board -> qtree, init_qnode( pos, cell ) );
+            }
+            
+        }
+    }
+
+    return;
+}

@@ -35,10 +35,10 @@ void load_settings(){
     assert( settings -> num_ships >= MIN_SHIPS );
     assert( settings -> num_ships <= MAX_SHIPS( settings -> board_size ) );
     
-    for( uchar i = 1; i <= settings -> num_ships; i++ ){
+    for( byte i = 1; i <= settings -> num_ships; i++ ){
         fgets( line, sizeof( line ), fp );
 
-        uchar j = 0;
+        byte j = 0;
         while( line[ j ] != '\0' ){
             
             if( line[ j ] == '1' )
@@ -66,14 +66,14 @@ void write_settings(){
         exit(1);
     }
 
-    fprintf( fp, "%hhd\n", settings -> board_size );
-    fprintf( fp, "%hhd\n", settings -> num_ships );
+    fprintf( fp, "%hhu\n", settings -> board_size );
+    fprintf( fp, "%hhu\n", settings -> num_ships );
 
-    for( uchar i = 1; i <= settings -> num_ships; i++ ){
+    for( byte i = 1; i <= settings -> num_ships; i++ ){
 
-        uchar k = 0;
+        byte k = 0;
         while( k < MAX_SHIP_SQUARE )
-            fprintf( fp, "%hhd", settings -> ship_shape[ i ][ k++ ] );
+            fprintf( fp, "%hhu", settings -> ship_shape[ i ][ k++ ] );
         
         fprintf( fp, "\n" );
     }
@@ -89,19 +89,19 @@ void change_settings(){
     
     char msg[] =
         "\n\nCurrent configuration:\n" \
-        "\nBoard size: %hhd" \
-        "\nNumber of ships: %hhd\n" \
+        "\nBoard size: %hhu" \
+        "\nNumber of ships: %hhu\n" \
         "\nDo you want to view current ships format?" \
         "\n1 - Yes\n2 - No\n> ";
 
     printf( msg, settings -> board_size, settings -> num_ships );
     
-    uchar x;
-    scanf( " %hhd", &x );
+    byte x;
+    scanf( " %hhu", &x );
 
     if( x == 1 ){
-        for( uchar i = 1; i <= settings -> num_ships; i++ ){
-            printf( "\nShip #%hhd\n", i );
+        for( byte i = 1; i <= settings -> num_ships; i++ ){
+            printf( "\nShip #%hhu\n", i );
         
             Board* tmp_ship = build_ship( i );
             print_board( tmp_ship, false );
@@ -113,38 +113,38 @@ void change_settings(){
     printf( "\n\nDo you want to change game settings?\n1 - Yes\n2 - No\n3 - Restore defaults\n> ");
     
         
-    scanf(" %hhd", &x);
+    scanf(" %hhu", &x);
     
     switch( x ){
     case 1:
         {
             do{
                 printf( "\nNew board size (between 20 and 40):\n> " );
-                scanf( " %hhd", &settings -> board_size );
+                scanf( " %hhu", &settings -> board_size );
                 
             }while( settings -> board_size < MIN_BOARD_SIZE
                     || settings -> board_size > MAX_BOARD_SIZE );
             
 
             do{
-                printf( "\nNew number of ships (between %hhd and %hhd):\n> ",
+                printf( "\nNew number of ships (between %hhu and %hhu):\n> ",
                         MIN_SHIPS,
                         MAX_SHIPS( settings -> board_size ) );
             
-                scanf( " %hhd", &settings -> num_ships );
+                scanf( " %hhu", &settings -> num_ships );
             }while( settings -> num_ships < MIN_SHIPS
                     || settings -> num_ships > MAX_SHIPS( settings -> board_size ) );
 
             
-            for( uchar i = 1; i <= settings -> num_ships; i++ ){
+            for( byte i = 1; i <= settings -> num_ships; i++ ){
 
-                printf( "\nBuilding new ship #%hhd\n",  i );
+                printf( "\nBuilding new ship #%hhu\n",  i );
                 build_new_ship( i );
                
             }
             
             printf( "\nSave new settings to file?\n1 - Yes\n2 - No\n> " );
-            scanf( " %hhd", &x );
+            scanf( " %hhu", &x );
 
             switch( x ){
             case 1:
@@ -200,12 +200,12 @@ void restore_default(){
 
 
 // Draw new ship
-void build_new_ship( uchar idx ){
+void build_new_ship( byte idx ){
 
     Board* tmp_board;
       
     Pos pos;
-    uchar pieces = 0;
+    byte pieces = 0;
 
     bool valid_pos[ MAX_SHIP_SIZE ][ MAX_SHIP_SIZE ];
     memset( valid_pos, false, MAX_SHIP_SQUARE );
@@ -218,7 +218,7 @@ void build_new_ship( uchar idx ){
             print_board( tmp_board, false );
         
             printf( "\nCoordinates (x y) to place one piece. (0 0) to finish:\n> " );
-            scanf( " (%hhd %hhd)", &pos.x, &pos.y );
+            scanf( " (%hhu %hhu)", &pos.x, &pos.y );
 
             if( pos.x == 0 || pos.y == 0 )
                 break;
@@ -239,7 +239,7 @@ void build_new_ship( uchar idx ){
         
 
             // Valid adjacent pieces
-            for( uchar j = 0; j <= 2; j++ ){
+            for( byte j = 0; j <= 2; j++ ){
                 char i = j - 1;
                 valid_pos[ pos.x - 1 + i ][ pos.y - 1 ] = true;
                 valid_pos[ pos.x - 1 ][ pos.y - 1 + i ] = true;
@@ -266,8 +266,8 @@ void build_new_ship( uchar idx ){
             "1 - Yes\n2 - No\n> ";
         printf( msg );
     
-        uchar x;
-        scanf( " %hhd", &x );
+        byte x;
+        scanf( " %hhu", &x );
 
         if( x == 2 ){
             free_board( tmp_board );
@@ -279,11 +279,11 @@ void build_new_ship( uchar idx ){
     
     }while( !confirm );
 
-    uchar k = 0;
+    byte k = 0;
 
     // Write to settings struct.
-    for( uchar x = 0; x < MAX_SHIP_SIZE; x++ ){
-        for( uchar y = 0; y < MAX_SHIP_SIZE; y++ ){
+    for( byte x = 0; x < MAX_SHIP_SIZE; x++ ){
+        for( byte y = 0; y < MAX_SHIP_SIZE; y++ ){
 
             if( tmp_board -> matrix[ x ][ y ].ship != 0 ){
                 settings -> ship_shape[ idx ][ k ] = true;

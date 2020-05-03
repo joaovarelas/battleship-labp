@@ -2,6 +2,7 @@
 #include "settings.h"
 #include "game.h"
 #include "random.h"
+#include "quadtree.h"
 
 void ascii_art(){
     char logo[] =
@@ -19,13 +20,15 @@ void ascii_art(){
 
 
 int main( int argc, char** argv ){
+
     
     init_settings();
     load_settings();
-
-    init_seed();
     
-    uchar x;
+    init_seed();
+
+    
+    byte x;
 
     do {
 
@@ -38,7 +41,7 @@ int main( int argc, char** argv ){
         
         printf( "%s", menu );
 
-        scanf( " %hhd", &x );
+        scanf( " %hhu", &x );
 
         switch( x ){
         
@@ -52,8 +55,8 @@ int main( int argc, char** argv ){
                 
                 printf( "%s", menu );
 
-                uchar z;
-                scanf( " %hhd", &z );
+                byte z;
+                scanf( " %hhu", &z );
 
                 switch( z ){
                 
@@ -78,7 +81,6 @@ int main( int argc, char** argv ){
 
         case 3:
             printf("\nAhoy, Captain!\n");
-            exit(0);
             break;
         
         default:
@@ -87,6 +89,7 @@ int main( int argc, char** argv ){
         
     }while( x != 3 );
 
+    free( settings );
     
     return 0;
 }

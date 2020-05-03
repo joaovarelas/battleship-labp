@@ -3,6 +3,6 @@
 
 void init_seed();
 bool rand_bool();
-uchar rand_num( uchar min, uchar max );
+byte rand_num( byte min, byte max );
 
 #endif

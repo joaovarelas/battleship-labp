@@ -1,16 +1,16 @@
 CC = gcc
-FLAGS = -Wall -std=c99
-
+FLAGS = -Wall -std=c99 -g
 
 CLIENT = client
 SERVER = server
 
-SRC = player.c board.c game.c ship.c settings.c random.c
+SRC = player.c board.c game.c ship.c settings.c random.c cell.c quadtree.c
 
 CLI = client.c
 SRV = server.c
 
 BINPATH = ../bin
+
 
 ${CLIENT}:
 	${CC} ${FLAGS} -o ${BINPATH}/${CLIENT} ${CLI} ${SRC}
@@ -18,6 +18,7 @@ ${CLIENT}:
 
 ${SERVER}:
 	${CC} ${FLAGS} -o ${BINPATH}/${SERVER} ${SRV} ${SRC}
+
 
 all: ${CLIENT} ${SERVER}
 

@@ -3,8 +3,8 @@
 
 typedef struct _Settings {
     
-    uchar board_size;
-    uchar num_ships;
+    byte board_size;
+    byte num_ships;
     bool ship_shape[ MAX_SHIPS( MAX_BOARD_SIZE ) + 1 ][ MAX_SHIP_SQUARE ];
     
 } Settings;
@@ -20,6 +20,6 @@ void write_settings();
 void change_settings();
 void restore_default();
 
-void build_new_ship( uchar idx );
+void build_new_ship( byte idx );
 
 #endif

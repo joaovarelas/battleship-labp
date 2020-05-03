@@ -1,5 +1,6 @@
 #include "config.h"
 #include "ship.h"
+#include "cell.h"
 #include "board.h"
 #include "settings.h"
 #include "random.h"
@@ -8,8 +9,7 @@ Ship* init_ship(){
     
     Ship* ship = ( Ship* ) malloc ( sizeof( Ship ) );
 
-    ship -> pos.x = -1; 
-    ship -> pos.y = -1;
+    init_pos( &ship -> pos, 0, 0);
     ship -> size = 0;
     ship -> shot_count = 0;
     ship -> alive = true;
@@ -20,8 +20,7 @@ Ship* init_ship(){
 
 void copy_ship( Ship* dst, Ship* src ){
 
-    dst -> pos.x = src -> pos.x;
-    dst -> pos.y = src -> pos.y;
+    copy_pos( &dst -> pos, &src -> pos ); 
     dst -> size = src -> size;
     dst -> shot_count = src -> shot_count;
     dst -> alive = src -> alive;
@@ -31,14 +30,14 @@ void copy_ship( Ship* dst, Ship* src ){
 
 
 // Build ship from settings specification, given index idx
-Board* build_ship( uchar idx ){
+Board* build_ship( byte idx ){
     Board* tmp_board = init_board( MAX_SHIP_SIZE );
 
-    uchar k = 0;
-    uchar pieces = 0;
+    byte k = 0;
+    byte pieces = 0;
     
-    for( uchar i = 0; i < MAX_SHIP_SIZE; i++ ){
-        for( uchar j = 0; j < MAX_SHIP_SIZE; j++ ){
+    for( byte i = 0; i < MAX_SHIP_SIZE; i++ ){
+        for( byte j = 0; j < MAX_SHIP_SIZE; j++ ){
             
             bool piece = settings -> ship_shape[ idx ][ k ];
 
@@ -61,23 +60,21 @@ Board* build_ship( uchar idx ){
 
 void manual_place_ship( Board* player_board, Board* ship_board ){
   
-    uchar n = settings -> board_size;
+    byte n = settings -> board_size;
     bool placed = false;
 
     printf( "\nEnter coordinates (x y) to place the ship:\n" );
 
-    uchar z;
+    byte z;
     Pos pos;
     do{
         Board* tmp_board = init_board( n );
 
         bool overlap = true;
 
-
         // Initial position at the board center
-        pos.x = n / 2;
-        pos.y = n / 2;
-               
+        init_pos( &pos, n/2, n/2 );
+                       
         do{
              
             copy_tmp_board( pos, player_board, ship_board, tmp_board );
@@ -100,7 +97,7 @@ void manual_place_ship( Board* player_board, Board* ship_board ){
             
             printf( msg );
             
-            scanf( " %hhd", &z );
+            scanf( " %hhu", &z );
 
             move_ship( z, &pos, ship_board );
             
@@ -120,10 +117,10 @@ void manual_place_ship( Board* player_board, Board* ship_board ){
 
 void random_place_ship( Board* player_board, Board* ship_board ){
 
-    uchar n = settings -> board_size;
+    byte n = settings -> board_size;
     
-    uchar upper = n - BOARD_SPAN;
-    uchar lower = MAX_SHIP_SIZE - BOARD_SPAN;
+    byte upper = n - BOARD_SPAN;
+    byte lower = MAX_SHIP_SIZE - BOARD_SPAN;
     
     bool placed = false;
 
@@ -137,10 +134,10 @@ void random_place_ship( Board* player_board, Board* ship_board ){
 
         do{
 
-            uchar times;
+            byte times;
 
             // Random actions within ship matrix
-            for( uchar action = UP; action <= RIGHT; action++ ){
+            for( byte action = UP; action <= RIGHT; action++ ){
                 times = rand_num( 0, MAX_SHIP_SIZE - 1 );
                 while( times-- > 0 ) shift_board( ship_board, action );
             }
@@ -183,7 +180,7 @@ void place_ship( Board* player_board, Board* ship_board, Board* tmp_board ){
     
     copy_board( player_board, tmp_board );
 
-    uchar idx = ship_board -> idx;
+    byte idx = ship_board -> idx;
             
     player_board -> idx = idx;    
     player_board -> ships_alive++;
@@ -195,7 +192,7 @@ void place_ship( Board* player_board, Board* ship_board, Board* tmp_board ){
 
 
 // Move, shift, rotate and do a flip
-void move_ship( uchar dir, Pos* pos, Board* ship_board ){
+void move_ship( byte dir, Pos* pos, Board* ship_board ){
 
     switch( dir ){
     case UP:
