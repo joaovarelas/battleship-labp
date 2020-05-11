@@ -1,30 +1,17 @@
 CC = gcc
-FLAGS = -Wall -std=c99 -g
+FLAGS = -Wall -std=c99 -D_GNU_SOURCE -g
 
 CLIENT = client
-SERVER = server
 
-SRC = player.c board.c game.c ship.c settings.c random.c cell.c quadtree.c
-
-CLI = client.c
-SRV = server.c
+SRC = client.c server.c player.c board.c game.c ship.c settings.c random.c cell.c quadtree.c
 
 BINPATH = ../bin
-
 
 ${CLIENT}:
 	${CC} ${FLAGS} -o ${BINPATH}/${CLIENT} ${CLI} ${SRC}
 
-
-${SERVER}:
-	${CC} ${FLAGS} -o ${BINPATH}/${SERVER} ${SRV} ${SRC}
-
-
-all: ${CLIENT} ${SERVER}
-
 clean:
-	rm -f ${CLIENT} ${SERVER}
+	rm -f ${BINPATH}/*
 
 run:
-	./${BINPATH}/${SERVER} ${ARGS}
-	./${BINPATH}/${CLIENT} ${ARGS}
+	${BINPATH}/${CLIENT} ${ARGS}

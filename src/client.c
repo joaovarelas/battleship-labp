@@ -64,7 +64,7 @@ int main( int argc, char** argv ){
                     play_by_turns();
                     break;
                 case 2:
-                    //local_multiplayer(); /* TODO */
+                    local_multiplayer();
                     break;
                 case 3:
                     //internet_multiplayer(); /* TODO */

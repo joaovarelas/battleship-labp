@@ -24,22 +24,17 @@ void free_player( Player* player ){
     return;
 }
 
+
+
 // Setup player's name and board configuration
-Player* setup_player( ){
+void setup_player( Player* player ){
 
-
-    char name[ MAX_LINE_SIZE ];    
-    printf( "\nPlayer Name:\n> " );
-    scanf( " %[^\n]s", name );
-    
-    Player* player = init_player ( name );
         
     printf( "\n1 - Random Strategy\n" );
     printf( "2 - Custom Strategy\n> " );
     
     byte x;
     scanf( " %hhu", &x );
-
 
     byte i = 1;
     while( i <= settings -> num_ships ) {
@@ -71,12 +66,7 @@ Player* setup_player( ){
     printf( "\nFinal board of player \"%s\":\n", player -> name );
     print_board( player -> board, false );
 
-    // Print some spaces to hide board
-    byte n = settings -> board_size;
-    while( n-- > 0 )
-        printf( "\n" );
-    
-    return player;
+    return;
 }
 
 

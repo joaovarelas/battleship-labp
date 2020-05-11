@@ -15,3 +15,9 @@ byte rand_num( byte min, byte max ){
     assert( min < max );
     return (rand() % ( max - min + 1 )) + min;
 }
+
+
+int rand_int( int min, int max ){
+    assert( min < max );
+    return (rand() % ( max - min + 1 )) + min;
+}

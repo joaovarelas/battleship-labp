@@ -9,6 +9,13 @@
 #include <unistd.h>
 #include <assert.h>
 
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <fcntl.h>
+
+
+
+
 // Board definitions
 #define MIN_BOARD_SIZE 20
 #define MAX_BOARD_SIZE 40
@@ -22,6 +29,7 @@
 #define MAX_LINE_SIZE 32
 
 
+
 // Board movement definitions
 #define UP 1
 #define DOWN 2
@@ -33,11 +41,18 @@
 #define HORIZONTAL( D ) ( D == LEFT || D == RIGHT )
 
 
+
 // Settings definitions
 #define SETTINGS_FILE "settings/settings"
 #define SETTINGS_BACKUP "settings/settings_default"
 
 
+// Named Pipes
+int fd[2];
+#define PIPE_NAME_FMT "/tmp/battleship-%d-%d"
+
+#define WRITE( BUF ) ( write( fd[0], BUF, sizeof( BUF ) ) )
+#define READ( BUF ) ( read( fd[1], BUF, sizeof( BUF ) ) )
 
 // QuadTree definitions
 #define MAX_NODES 1600 + 1
@@ -61,7 +76,7 @@
 
 // Forward declarations
 // Prevent circular dependency
-        typedef struct _Player Player;
+typedef struct _Player Player;
 typedef struct _Settings Settings;
 typedef struct _Pos Pos;
 typedef struct _Ship Ship;
@@ -70,6 +85,8 @@ typedef struct _Board Board;
 typedef struct _QTree QTree;
 typedef struct _QNode QNode;
 typedef struct _QBranch QBranch;
+
+
 
 // Byte (0 - 255)
 typedef unsigned char byte;

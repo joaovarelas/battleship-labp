@@ -2,26 +2,24 @@
 #include "game.h"
 #include "random.h"
 #include "quadtree.h"
+#include "server.h"
 
 void play_by_turns(){
-
-    printf( "\nSetting up Player #1\n" );
-    Player* player1 = setup_player();
-
-    printf( "\nSetting up Player #2\n" ); 
-    Player* player2 = setup_player();
+    char name[ MAX_LINE_SIZE ];
     
-    start_game( player1, player2 );
+    printf( "\nSetting up Player #1\nPlayer Name:\n> " );
+    scanf( " %[^\n]s", name );
+    Player* player1 = init_player ( name );
+    setup_player( player1 );
+
     
-    free_player( player1 );
-    free_player( player2 );
+    printf( "\nSetting up Player #2\n" );
+    scanf( " %[^\n]s", name );
+    Player* player2 = init_player ( name );
+    setup_player( player2 );
+
     
-    return;
-}
-
-
-void start_game( Player* player1, Player* player2 ){
-
+    
     byte n = settings -> board_size;
     bool game_finished = false;
     bool player1_turn = rand_bool();
@@ -47,7 +45,7 @@ void start_game( Player* player1, Player* player2 ){
         player = player1_turn ? player1 : player2;
         enemy =  player1_turn ? player2 : player1;
         
-        print_board( enemy -> board, true );
+        print_board( player -> board, true );
         printf( msg, player -> name );
       
         
@@ -61,35 +59,55 @@ void start_game( Player* player1, Player* player2 ){
         }    
 
 
-        // Set enemy_board depending on current player turn 
+        // Set enemy_board depending on current player turn
+        Board* player_board = player -> board;
         Board* enemy_board = enemy -> board;
-
-        // Set target cell considering (x y)
-        QNode* node = get_node( enemy_board -> qtree, pos );
-        Cell* target;
         
-        if( node != NULL ){
-            target = &node -> cell;
+        // Set target cell considering (x y)
+        QNode* player_node = get_node( player_board -> qtree, pos );
+        QNode* enemy_node = get_node( enemy_board -> qtree, pos );
+
+        Cell* player_target;
+        Cell* enemy_target;
+
+
+        // Get node at pos from player board
+        // We will use our board to store game state
+        // of opponent board as we hit
+        if( player_node != NULL ){
+            player_target = &player_node -> cell;
         }else{
-            init_cell( target, 0, MISS );
+            init_cell( player_target, 0, UNKNOWN );
+            insert_node( player_board -> qtree, init_qnode( pos, *player_target ) );
         }
-               
+            
+
+        // Get node at pos from enemy board
+        // Must handle enemy ships to count shots
+        // and check liveness
+        if( enemy_node != NULL ){
+            enemy_target = &enemy_node -> cell;
+        }else{
+            init_cell( enemy_target, 0, UNKNOWN );
+            insert_node( enemy_board -> qtree, init_qnode( pos, *enemy_target ) );
+        }
+  
+        
         // Must play on cells that were not played before
-        /*
-          if( ... ){
-          printf( "\nAlready played in (%hhu %hhu). Try again.\n", pos.x, pos.y );
-          continue;
-          }
-        */
+        if( player_target -> state != UNKNOWN ){
+            printf( "\nAlready played in (%hhu %hhu). Try again.\n", pos.x, pos.y );
+            sleep(1);
+            continue;
+        }
+        
 
     
         // Ship found at (x y). HIT!
-        if( target -> ship > 0 ){
+        if( enemy_target -> ship > 0 ){
 
-            byte ship_idx =  target -> ship;
+            byte ship_idx =  enemy_target -> ship;
             Ship* enemy_ship = enemy_board -> ships[ ship_idx ];
-            
-            target -> state = HIT;
+      
             enemy_ship -> shot_count++;
 
             // Ship has no more pieces, then its dead
@@ -102,8 +120,13 @@ void start_game( Player* player1, Player* player2 ){
             if( enemy_board -> ships_alive == 0 ){
                 game_finished = true;
             }
+
+
             
-            print_board( enemy_board, true );
+            // Use our board to store opponent board as we hit
+            player_target -> state = HIT;
+            
+            print_board( player_board, true );
             printf( "\nHIT!\n" );
            
 
@@ -112,10 +135,10 @@ void start_game( Player* player1, Player* player2 ){
         else{
 
             // No ship found in target cell
-            target -> state = MISS;
+            player_target -> state = MISS;
             player1_turn = !player1_turn;
 
-            print_board( enemy_board, true );
+            print_board( player_board, true );
             printf( "\nMISS.\n" );
         }
 
@@ -127,6 +150,66 @@ void start_game( Player* player1, Player* player2 ){
 
     printf( "\n\nGame finished!\nThe winner is \"%s\".\n\nDo you want to play again?\n",
             player -> name );
+
+    
+    free_player( player1 );
+    free_player( player2 );
+    
+    return;
+}
+
+
+
+
+
+
+void local_multiplayer(){
+
+    char menu[] =
+        "\n1 - Create new game\n" \
+        "2 - Join existing game\n> ";              
+                
+    printf( "%s", menu );
+
+    byte z;
+    scanf( " %hhu", &z );
+
+
+    int game_id;
+
+    
+    Player* player;
+    char name[ MAX_LINE_SIZE ];
+      
+    printf( "\nEnter your nickname:\n> " );
+    scanf( " %[^\n]s", name );
+    player = init_player( name );
+
+    if( z == 1 ){
+        game_id = rand_int( 10000, 99999 );
+        host_local_game( fd, name, game_id );
+    }else{
+        printf( "\nEnter ID of existing game:\n> " );
+        scanf( " %d", &game_id );
+        join_local_game( fd, name, game_id );
+    }
+
+    setup_player( player );
+
+  
+    printf( "\nWaiting for opponent to be ready..." );
+
+    fflush( stdout );
+
+    WRITE( "ready" );
+    READ( buffer );
+
+    printf( "\nOpponent is ready!\nStarting the game..." );
+
+    /* TODO */
+    
+    //end_fifo( game_id );
+    free_player( player );
     
     return;
 }

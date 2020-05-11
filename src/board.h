@@ -6,7 +6,7 @@
 typedef struct _Board {
     
     byte size; // 20x20 to 40x40
-    
+
     Cell** matrix; // Size^2 cells
     QTree* qtree; // Save ship pieces as nodes
     
