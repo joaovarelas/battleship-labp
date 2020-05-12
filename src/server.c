@@ -20,6 +20,8 @@ void host_local_game( int* fd, char* name, int game_id ){
 
     printf( "\nPlayer \"%s\" joined! Starting game...\n", buffer );
 
+    strcpy( opponent_name, buffer );
+    
     return;
 }
 
@@ -53,35 +55,37 @@ void join_local_game( int* fd, char* name, int game_id ){
     WRITE( name );
     READ( buffer );
         
-    printf( "\nJoined \"%s\" game successfully! (ID: %d)\n", buffer, game_id ); 
+    printf( "\nJoined \"%s\" game successfully! (ID: %d)\n", buffer, game_id );
+    strcpy( opponent_name, buffer );
 
     return;
 }
+
+
+void wait_opponent(){
+    printf( "\nWaiting for opponent to be ready...\n" );
+
+    fflush( stdout );
+
+    WRITE( "ready" );
+    READ( buffer );
+
+    printf( "\nOpponent is ready!\nStarting the game...\n" );
+    return;
+}
+
 
 
 void end_fifo( int game_id ){
-    
+
     close( fd[0] );
     close( fd[1] );
-
-    char f1[ MAX_LINE_SIZE ];
-    char f2[ MAX_LINE_SIZE ];
-    
-    sprintf( f1, PIPE_NAME_FMT, game_id, 0 );
-    sprintf( f2, PIPE_NAME_FMT, game_id, 1 );
-
-    printf( "\nDeleting FIFO \"%s\"\n", f1 );
-    unlink( f1 );
-    printf( "\nDeleting FIFO \"%s\"\n", f2 );
-    unlink( f2 );
+     
+    //printf( "\nDeleting FIFO \"%s\"\n", in );
+    unlink( in );
+    //printf( "\nDeleting FIFO \"%s\"\n", out );
+    unlink( out );
 
     return;
 }
 
-
-/*
-  int main() {
-
-  return 0;
-  }
-*/

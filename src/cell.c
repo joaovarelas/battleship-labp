@@ -19,3 +19,10 @@ void copy_pos( Pos* dst, Pos* src ){
     dst -> y = src -> y;
     return;
 }
+
+void copy_cell( Cell* dst, Cell* src ){
+    dst -> ship = src -> ship;
+    dst -> state = src -> state;
+    return;
+}
+

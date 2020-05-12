@@ -63,8 +63,8 @@ void setup_player( Player* player ){
     player -> board -> matrix = NULL;
     
     // Print final board to player
-    printf( "\nFinal board of player \"%s\":\n", player -> name );
     print_board( player -> board, false );
+    printf( "\nFinal board of player \"%s\":\n", player -> name );
 
     return;
 }

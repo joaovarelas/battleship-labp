@@ -121,16 +121,18 @@ void print_board( Board* board, bool game_mode ){
 
 
 void print_cell( Board* board, Pos pos, bool game_mode ){
-
+    
     Cell cell;
 
     // Print quadtree if it has nodes, else print matrix
     if( !board -> qtree -> empty ){
         pos.x++;
         pos.y++;
+        
         QNode* node = get_node( board -> qtree, pos );
+        
         if( node != NULL ){
-            cell = node -> cell;
+            copy_cell( &cell, &node -> cell );
         }else{
             init_cell( &cell, 0, UNKNOWN );
         }
@@ -138,9 +140,8 @@ void print_cell( Board* board, Pos pos, bool game_mode ){
        
     }else{
 
-        cell = board -> matrix[ pos.x ][ pos.y ];
+        copy_cell( &cell, &board -> matrix[ pos.x ][ pos.y ]);
     }
-    
     
     // Print by "state" or Print by "ship"
     if( game_mode ){
@@ -164,6 +165,12 @@ void print_cell( Board* board, Pos pos, bool game_mode ){
         switch( cell.ship ){
         case 0:
             printf( " " );
+            break;
+        case 66:
+            printf( "•" );
+            break;
+        case 99:
+            printf( "x" );
             break;
         default:
             printf( "■" );

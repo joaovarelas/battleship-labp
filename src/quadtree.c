@@ -25,9 +25,8 @@ QNode* init_qnode( Pos pos, Cell cell){
     QNode* qnode = ( QNode* ) malloc ( sizeof ( QNode ) );
 
     copy_pos( &qnode -> pos, &pos );
-    qnode -> cell.ship = cell.ship;
-    qnode -> cell.state = cell.state;
-    
+    copy_cell( &qnode -> cell, &cell );
+        
     return qnode;
 }
 
@@ -74,6 +73,9 @@ void insert_node( QTree* qtree, QNode* node ){
 
 
 QNode* get_node( QTree* qtree, Pos pos ){
+
+    if( qtree == NULL )
+        return NULL;
     
     Pos p1 = qtree -> p1;
     Pos p2 = qtree -> p2;

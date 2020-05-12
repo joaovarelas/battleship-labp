@@ -49,10 +49,11 @@
 
 // Named Pipes
 int fd[2];
+#define MAX_BUF_SIZE 1024
 #define PIPE_NAME_FMT "/tmp/battleship-%d-%d"
 
-#define WRITE( BUF ) ( write( fd[0], BUF, sizeof( BUF ) ) )
-#define READ( BUF ) ( read( fd[1], BUF, sizeof( BUF ) ) )
+#define WRITE( BUF ) ( write( fd[0], BUF, MAX_BUF_SIZE ) )
+#define READ( BUF ) ( read( fd[1], BUF, MAX_BUF_SIZE ) )
 
 // QuadTree definitions
 #define MAX_NODES 1600 + 1
