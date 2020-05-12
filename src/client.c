@@ -48,9 +48,9 @@ int main( int argc, char** argv ){
             {
                 
                 char menu[] =
-                    "\n1 - Play By Turns\n" \
-                    "2 - Local Multiplayer\n" \
-                    "3 - Internet Multiplayer\n> ";              
+                    "\n1 - Play by turns\n" \
+                    "2 - Local multiplayer\n" \
+                    "3 - Internet multiplayer\n> ";              
                 
                 byte qq;
                 do{
@@ -65,10 +65,10 @@ int main( int argc, char** argv ){
                     play_by_turns();
                     break;
                 case 2:
-                    local_multiplayer();
+                    multiplayer( false );
                     break;
                 case 3:
-                    //internet_multiplayer(); /* TODO */
+                    multiplayer( true );
                     break;
                 default:
                     break;

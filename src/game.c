@@ -5,41 +5,40 @@
 #include "server.h"
 
 void play_by_turns(){
-    char name[ MAX_LINE_SIZE ];
 
     do{
         printf( "\nSetting up Player #1\nPlayer Name:\n> " );
-        fflush( stdout );
         fgets( buffer, sizeof( buffer ), stdin );
     }while( sscanf( buffer, "%[^\n]s", name ) != 1 );
     
     Player* player1 = init_player ( name );
     setup_player( player1 );
+
     
 
     do{
         printf( "\nSetting up Player #2\nPlayer Name:\n> " );
-        fflush( stdout );
         fgets( buffer, sizeof( buffer ), stdin );
     }while( sscanf( buffer, "%[^\n]s", name ) != 1 );
     
     Player* player2 = init_player ( name );
     setup_player( player2 );
+
     
   
     byte n = settings -> board_size;
-    
+
+    // Select random player to start
     player1_turn = rand_bool();
     game_finished = false;
     char msg[] = "\n\nThe War Begins!\n\nPlayer \"%s\" starts the game with the first play.\n";
-    
-    // Who starts
+
+    // Notice who starts
     if( player1_turn ){
         printf( msg, player1 -> name );
     } else {
         printf( msg, player2 -> name );
     }
-    fflush( stdout );
 
 
     Player* player;
@@ -58,8 +57,7 @@ void play_by_turns(){
         
             print_board( player -> board, true );
             printf( msg, player -> name );
-            fflush( stdout );
-            
+                 
             fgets( buffer, sizeof( buffer ), stdin );
         }while( sscanf( buffer, "%hhu %hhu", &pos.x, &pos.y ) != 2 );
 
@@ -79,8 +77,6 @@ void play_by_turns(){
         QNode* enemy_node =  get_node( enemy_board -> qtree, pos );
 
         Cell* player_target;
-        //Cell enemy_target;
-
 
         // Get node at pos from player board
         // We will use our board to store game state
@@ -89,11 +85,14 @@ void play_by_turns(){
             
             Cell new_cell;
             init_cell( &new_cell, 0, UNKNOWN );
+            
             QNode* new_node = init_qnode( pos, new_cell );
             insert_node( player_board -> qtree, new_node );
 
         }
 
+
+        // Go down the tree to find node in leaves
         player_node = get_node( player_board -> qtree, pos );
         player_target = &player_node -> cell;
               
@@ -163,9 +162,7 @@ void play_by_turns(){
 
 
 
-
-
-void local_multiplayer(){
+void multiplayer( bool network ){
 
     char menu[] =
         "\n1 - Create new game\n" \
@@ -178,9 +175,6 @@ void local_multiplayer(){
     }while( sscanf( buffer, "%hhu", &q ) != 1 );
 
     bool host;
-    
-    Player* player;
-    char name[ MAX_LINE_SIZE ];
 
     do{
         printf( "\nEnter your nickname:\n> " );
@@ -189,11 +183,20 @@ void local_multiplayer(){
     
     player = init_player( name );
 
+    // Join game or enter existing game (room)
+    // Using named pipes to synchronize both clients
     if( q == 1 ){
-        host_local_game( fd, name );
+        
+        if( network ) host_network_game(); 
+        else host_local_game();
+        
         host = true;
+        
     }else{
-        join_local_game( fd, name );
+        
+        if( network ) join_network_game();
+        else join_local_game();
+        
         host = false;
     }
 
@@ -202,69 +205,68 @@ void local_multiplayer(){
     wait_opponent();
     
     game_finished = false;
-        
-    if( host ){
 
-        // Decide who starts and send
-        player1_turn = rand_bool();
-        sprintf( buffer, "%d", player1_turn );
-        printf( "\nDEBUG: host sending %s\n", buffer );
-        WRITE( buffer );
-
-        do{
-            
-            if( player1_turn ){
-                        
-                if( !send_shot( player ) )
-                    continue;
-                
-            }else{
-
-                receive_shot( player );                                 
-            }
-
-            sleep( 2 );
-
-        }while( !game_finished );
-        
-        
-    }else{
-
-        // Receive who starts from host
-        READ( buffer );
-        printf( "\nDEBUG: guest received %s\n", buffer );
-        player1_turn = ( strcmp( buffer, "1" ) == 0 ); 
-        
-        do{
-
-            if( player1_turn ){
-                
-                receive_shot( player );
-          
-            }else{
-
-                if( !send_shot( player ) )
-                    continue;
-            }
-    
-            sleep( 2 );
-            
-        }while( !game_finished );
-
-    }
+    /*
+      Start the game
+    */
+    start_multiplayer_game( host );
 
     
     printf( "\n\nGame finished!\nThe winner is \"%s\".\n\nDo you want to play again?\n",
             ( host ? ( player1_turn ? player -> name : opponent_name )
               : ( player1_turn ? opponent_name : player -> name ) ) );
 
-    
+
+    close_fd();
     end_fifo();
     free_player( player );
     
     return;
 }
 
+
+void start_multiplayer_game( bool host ){
+
+    if( host ){
+        
+        // Decide who starts and send
+        player1_turn = rand_bool();
+        sprintf( buffer, "%d", player1_turn );
+        WRITE( buffer );
+    
+    }else{
+
+        // Receive who starts from host
+        READ( buffer );
+        player1_turn = ( atoi( buffer ) == true ); 
+
+    }
+
+    do{
+            
+        if( player1_turn ){
+
+            if( host ){
+                if( !send_shot( player ) )
+                    continue;
+            }else{
+                receive_shot( player );}
+                
+        }else{
+            if( host ){
+                receive_shot( player );
+            }else{
+                if( !send_shot( player ) )
+                    continue;
+            }
+        }
+
+        sleep( 2 );
+
+    }while( !game_finished );
+    
+    return;
+}
 
 
 
@@ -276,9 +278,11 @@ bool send_shot( Player* player ){
 
     do {
         print_board( player_board, true );
+        
         char msg[] = "\nIt's \"%s\" turn.\nCoordinates x y to fire:\n> ";
         printf( msg, player -> name );
         fflush( stdout );
+        
         fgets( buffer, sizeof( buffer ), stdin );
     }while( sscanf( buffer, "%hhu %hhu", &pos.x, &pos.y ) != 2 );
                 
@@ -302,14 +306,12 @@ bool send_shot( Player* player ){
                 
     // Send shot coords
     sprintf( buffer, "%hhu %hhu", pos.x, pos.y );
-    printf( "\nDEBUG: sending %s\n", buffer );
     fflush( stdout );
     
     WRITE( buffer );
 
     // Receive enemy feedback
     READ( buffer );
-    printf( "\nDEBUG: received %s\n", buffer );
     fflush( stdout );
 
 
@@ -338,6 +340,7 @@ bool send_shot( Player* player ){
     if( state == HIT ){
         
         player_target -> state = HIT;
+        
         print_board( player_board, true );
         printf( "\nHIT!\n" );
         fflush( stdout );
@@ -345,8 +348,9 @@ bool send_shot( Player* player ){
     }else if( state == MISS ){
 
         player_target -> state = MISS;
-        print_board( player_board, true );
         player1_turn = !player1_turn;
+        
+        print_board( player_board, true );
         printf( "\nMISS.\n" );
         fflush( stdout );
         
@@ -354,6 +358,7 @@ bool send_shot( Player* player ){
 
         game_finished = true;
         player_target -> state = HIT;
+        
         print_board( player_board, true );
         printf( "\nGame has finished.\n" );
         fflush( stdout );
@@ -375,7 +380,7 @@ bool receive_shot( Player* player ){
     Board* player_board = player -> board;
     
     print_board( player_board, false );
-    char msg[] = "\nIt's \"%s\" turn.\nPlease wait...\n> ";
+    char msg[] = "\nIt's \"%s\" turn.\nPlease wait...\n";
     printf( msg, opponent_name );
     fflush( stdout );
 
@@ -383,7 +388,6 @@ bool receive_shot( Player* player ){
     Pos pos;
 
     READ( buffer );
-    printf( "\nDEBUG: received %s\n", buffer );
     fflush( stdout );
     sscanf( buffer, "%hhu %hhu", &pos.x, &pos.y );
 
@@ -398,8 +402,10 @@ bool receive_shot( Player* player ){
         
         Cell new_cell;
         init_cell( &new_cell, 0, UNKNOWN );
+        
         QNode* new_node = init_qnode( pos, new_cell );
         insert_node( player_board -> qtree, new_node );
+        
     }
 
     player_node = get_node( player_board -> qtree, pos );
@@ -412,22 +418,28 @@ bool receive_shot( Player* player ){
 
         player_ship -> shot_count++;
         if( player_ship -> shot_count == player_ship -> size ){
+            
             player_ship -> alive = false;
             player_board -> ships_alive--;
+            
         }
                     
         if( player_board -> ships_alive == 0 ){
+            
             game_finished = true;
             player_target -> ship = 99; // Hack
+            
             sprintf( buffer, "%hhu", FINISH );
             WRITE( buffer );
             print_board( player_board, false );
             printf( "\nGame has finished.\n" );
             fflush( stdout );
+            
             return true;
         }
             
         player_target -> ship = 99; // Hack
+        
         sprintf( buffer, "%hhu", HIT );
         WRITE( buffer );
         print_board( player_board, false );
@@ -438,6 +450,7 @@ bool receive_shot( Player* player ){
         
         player_target -> ship = 66;
         player1_turn = !player1_turn;
+        
         sprintf( buffer, "%hhu", MISS );
         WRITE( buffer );
         print_board( player_board, false );

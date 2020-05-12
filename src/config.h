@@ -1,19 +1,22 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdbool.h>
-#include <string.h>
-#include <time.h>
-#include <unistd.h>
+#include <arpa/inet.h>
 #include <assert.h>
-
+#include <fcntl.h>
+#include <netdb.h> 
+#include <netinet/in.h> 
+#include <pthread.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <fcntl.h>
-
-
+#include <sys/socket.h>
+#include <sys/wait.h>
+#include <time.h>
+#include <unistd.h>
 
 
 // Board definitions
@@ -29,7 +32,6 @@
 #define MAX_LINE_SIZE 32
 
 
-
 // Board movement definitions
 #define UP 1
 #define DOWN 2
@@ -41,20 +43,19 @@
 #define HORIZONTAL( D ) ( D == LEFT || D == RIGHT )
 
 
-
 // Settings definitions
 #define SETTINGS_FILE "settings/settings"
 #define SETTINGS_BACKUP "settings/settings_default"
 
 
-// Named Pipes
-#define MAX_BUF_SIZE 1024
+// Named pipes and network
+#define MAX_BUF_SIZE 256
 #define PIPE_NAME_FMT "/tmp/battleship-%d-%d"
 
-#define WRITE( BUF )  ( write( fd[0], BUF, MAX_BUF_SIZE ) )
-#define READ( BUF )   ( read(  fd[1], BUF, MAX_BUF_SIZE ) )
-
-    
+#define WRITE( BUF )   ( write( fd[0], BUF, sizeof( BUF ) ) )
+#define READ(  BUF )   ( read(  fd[1], BUF, sizeof( BUF ) ) )
+#define SEND(  BUF )   ( send(  fd[0], BUF, sizeof( BUF ), 0) )
+#define RECV(  BUF )   ( recv(  fd[1], BUF, sizeof( BUF ), 0) )
 
     
 // QuadTree definitions
@@ -76,9 +77,8 @@
 #define SOUTHEAST( P, P1, P2 ) ( SOUTHSIDE( P, P1, P2 ) && EASTSIDE( P, P1, P2 ) )
 
 
-
 // Forward declarations
-// Prevent circular dependency
+// Prevent circular dependency;
 typedef struct _Player Player;
 typedef struct _Settings Settings;
 typedef struct _Pos Pos;
@@ -88,7 +88,6 @@ typedef struct _Board Board;
 typedef struct _QTree QTree;
 typedef struct _QNode QNode;
 typedef struct _QBranch QBranch;
-
 
 
 // Byte (0 - 255)

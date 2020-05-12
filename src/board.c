@@ -350,6 +350,7 @@ void matrix_to_qtree( Board* board ){
                 init_pos( &pos, i + 1, j + 1 );
 
                 insert_node( board -> qtree, init_qnode( pos, cell ) );
+                
             }
             
         }
