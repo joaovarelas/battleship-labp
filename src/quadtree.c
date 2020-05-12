@@ -7,15 +7,14 @@ QTree* init_qtree( Pos p1, Pos p2 ){
 
     copy_pos( &qtree -> p1, &p1 );
     copy_pos( &qtree -> p2, &p2 );
-    
+
+    qtree -> empty = true;
     qtree -> node = NULL;
 
     qtree -> nw = NULL;
     qtree -> ne = NULL;
     qtree -> sw = NULL;
     qtree -> se = NULL;
-
-    qtree -> empty = true;
     
     return qtree;
 }
@@ -43,10 +42,10 @@ void insert_node( QTree* qtree, QNode* node ){
     qtree -> empty = false;
     
     if( IN_RANGE( p1, p2 ) ){
+
         if( qtree -> node == NULL )
             qtree -> node = node;
-        
-        
+            
         return;
     }
     

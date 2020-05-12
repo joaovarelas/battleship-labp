@@ -2,7 +2,6 @@
 #include "settings.h"
 #include "game.h"
 #include "random.h"
-#include "quadtree.h"
 
 void ascii_art(){
     char logo[] =
@@ -27,8 +26,7 @@ int main( int argc, char** argv ){
     
     init_seed();
 
-    
-    byte x;
+    byte q;
 
     do {
 
@@ -38,12 +36,13 @@ int main( int argc, char** argv ){
             "\n1 - New game\n" \
             "2 - Settings\n" \
             "3 - Exit\n> ";
+
+        do{
+            printf( menu );
+            fgets( buffer, sizeof( buffer ), stdin );
+        }while( sscanf( buffer, "%hhu", &q ) != 1 );
         
-        printf( "%s", menu );
-
-        scanf( " %hhu", &x );
-
-        switch( x ){
+        switch( q ){
         
         case 1:
             {
@@ -53,12 +52,14 @@ int main( int argc, char** argv ){
                     "2 - Local Multiplayer\n" \
                     "3 - Internet Multiplayer\n> ";              
                 
-                printf( "%s", menu );
+                byte qq;
+                do{
+                    printf( menu );
+                    fgets( buffer, sizeof( buffer ), stdin );
+                }while( sscanf( buffer, "%hhu", &qq ) != 1 );
 
-                byte z;
-                scanf( " %hhu", &z );
 
-                switch( z ){
+                switch( qq ){
                 
                 case 1:
                     play_by_turns();
@@ -79,15 +80,12 @@ int main( int argc, char** argv ){
             change_settings();
             break;
 
-        case 3:
-            printf("\nAhoy, Captain!\n");
-            break;
-        
         default:
+            printf("\nAhoy, Captain!\n");
             break;
         }
         
-    }while( x != 3 );
+    }while( q != 3 );
 
     free( settings );
     

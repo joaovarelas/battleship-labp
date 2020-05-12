@@ -1,5 +1,6 @@
 #include "player.h"
 #include "quadtree.h"
+#include "server.h"
 
 Player* init_player( char* name ){
 
@@ -29,12 +30,12 @@ void free_player( Player* player ){
 // Setup player's name and board configuration
 void setup_player( Player* player ){
 
-        
-    printf( "\n1 - Random Strategy\n" );
-    printf( "2 - Custom Strategy\n> " );
-    
-    byte x;
-    scanf( " %hhu", &x );
+    byte q;
+    do{
+        printf( "\n1 - Random Strategy\n" );
+        printf( "2 - Custom Strategy\n> " );
+        fgets( buffer, sizeof( buffer ), stdin );
+    }while( sscanf( buffer, "%hhu", &q ) != 1 );
 
     byte i = 1;
     while( i <= settings -> num_ships ) {
@@ -42,7 +43,7 @@ void setup_player( Player* player ){
         Board* ship = build_ship( i );
 
         // Place ship on board (randomly or manually)
-        if( x == 1 ){
+        if( q == 1 ){
             random_place_ship( player -> board, ship );
         }else{
             manual_place_ship( player -> board, ship );

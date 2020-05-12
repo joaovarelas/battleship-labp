@@ -139,7 +139,7 @@ void print_cell( Board* board, Pos pos, bool game_mode ){
         
        
     }else{
-
+        
         copy_cell( &cell, &board -> matrix[ pos.x ][ pos.y ]);
     }
     

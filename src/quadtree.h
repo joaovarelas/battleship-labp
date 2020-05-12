@@ -19,14 +19,12 @@ typedef struct _QTree {
     Pos p1, p2;
 
     QNode* node;
-    //unsigned short size; // 0 to 1600+1 nodes
+    bool empty;
 
     QTree* nw;
     QTree* ne;
     QTree* sw;
     QTree* se;
-
-    bool empty;
     
 } QTree;
 

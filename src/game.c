@@ -6,24 +6,32 @@
 
 void play_by_turns(){
     char name[ MAX_LINE_SIZE ];
+
+    do{
+        printf( "\nSetting up Player #1\nPlayer Name:\n> " );
+        fflush( stdout );
+        fgets( buffer, sizeof( buffer ), stdin );
+    }while( sscanf( buffer, "%[^\n]s", name ) != 1 );
     
-    printf( "\nSetting up Player #1\nPlayer Name:\n> " );
-    scanf( " %[^\n]s", name );
     Player* player1 = init_player ( name );
     setup_player( player1 );
-
     
-    printf( "\nSetting up Player #2\n" );
-    scanf( " %[^\n]s", name );
+
+    do{
+        printf( "\nSetting up Player #2\nPlayer Name:\n> " );
+        fflush( stdout );
+        fgets( buffer, sizeof( buffer ), stdin );
+    }while( sscanf( buffer, "%[^\n]s", name ) != 1 );
+    
     Player* player2 = init_player ( name );
     setup_player( player2 );
-  
     
+  
     byte n = settings -> board_size;
     
     player1_turn = rand_bool();
     game_finished = false;
-    char msg[] = "\n\n\n\nThe War Begins!\n\nPlayer \"%s\" starts the game with the first play.\n";
+    char msg[] = "\n\nThe War Begins!\n\nPlayer \"%s\" starts the game with the first play.\n";
     
     // Who starts
     if( player1_turn ){
@@ -31,24 +39,29 @@ void play_by_turns(){
     } else {
         printf( msg, player2 -> name );
     }
+    fflush( stdout );
 
 
     Player* player;
     Player* enemy;
     
     do{
-        
-        char msg[] = "\nIt's \"%s\" turn.\nCoordinates x y to fire:\n> ";
 
-        player = player1_turn ? player1 : player2;
-        enemy =  player1_turn ? player2 : player1;
-        
-        print_board( player -> board, true );
-        printf( msg, player -> name );
-      
-        
         Pos pos;
-        scanf( " %hhu %hhu", &pos.x, &pos.y );
+                    
+        do{
+           
+            char msg[] = "\nIt's \"%s\" turn.\nCoordinates x y to fire:\n> ";
+
+            player = player1_turn ? player1 : player2;
+            enemy =  player1_turn ? player2 : player1;
+        
+            print_board( player -> board, true );
+            printf( msg, player -> name );
+            fflush( stdout );
+            
+            fgets( buffer, sizeof( buffer ), stdin );
+        }while( sscanf( buffer, "%hhu %hhu", &pos.x, &pos.y ) != 2 );
 
         // Check border limits
         if( ( pos.x < 1 || pos.x > n ) || ( pos.y < 1 || pos.y > n ) ){
@@ -88,7 +101,7 @@ void play_by_turns(){
         // Must play on cells that were not played before
         if( player_target -> state != UNKNOWN ){
             printf( "\nAlready played in %hhu %hhu. Try again.\n", pos.x, pos.y );
-            sleep(1);
+            sleep(2);
             continue;
         }
         
@@ -134,7 +147,7 @@ void play_by_turns(){
 
   
         // Wait a bit
-        sleep(1);
+        sleep(2);
         
     }while( !game_finished );
 
@@ -158,30 +171,29 @@ void local_multiplayer(){
         "\n1 - Create new game\n" \
         "2 - Join existing game\n> ";              
                 
-    printf( "%s", menu );
+    byte q;
+    do{
+        printf( "%s", menu );
+        fgets( buffer, sizeof( buffer ), stdin );
+    }while( sscanf( buffer, "%hhu", &q ) != 1 );
 
-    byte z;
-    scanf( " %hhu", &z );
-
-
-    int game_id;
     bool host;
     
     Player* player;
     char name[ MAX_LINE_SIZE ];
-      
-    printf( "\nEnter your nickname:\n> " );
-    scanf( " %[^\n]s", name );
+
+    do{
+        printf( "\nEnter your nickname:\n> " );
+        fgets( buffer, sizeof( buffer ), stdin );
+    }while( sscanf( buffer, "%[^\n]s", name ) != 1 );
+    
     player = init_player( name );
 
-    if( z == 1 ){
-        game_id = rand_int( 10000, 99999 );
-        host_local_game( fd, name, game_id );
+    if( q == 1 ){
+        host_local_game( fd, name );
         host = true;
     }else{
-        printf( "\nEnter ID of existing game:\n> " );
-        scanf( " %d", &game_id );
-        join_local_game( fd, name, game_id );
+        join_local_game( fd, name );
         host = false;
     }
 
@@ -247,7 +259,7 @@ void local_multiplayer(){
               : ( player1_turn ? opponent_name : player -> name ) ) );
 
     
-    end_fifo( game_id );
+    end_fifo();
     free_player( player );
     
     return;
@@ -261,16 +273,19 @@ bool send_shot( Player* player ){
     Pos pos;
     Board* player_board = player -> board;
     byte n = settings -> board_size;
-    
-    print_board( player_board, true );
-    char msg[] = "\nIt's \"%s\" turn.\nCoordinates x y to fire:\n> ";
-    printf( msg, player -> name );
 
-    scanf( " %hhu %hhu", &pos.x, &pos.y );
+    do {
+        print_board( player_board, true );
+        char msg[] = "\nIt's \"%s\" turn.\nCoordinates x y to fire:\n> ";
+        printf( msg, player -> name );
+        fflush( stdout );
+        fgets( buffer, sizeof( buffer ), stdin );
+    }while( sscanf( buffer, "%hhu %hhu", &pos.x, &pos.y ) != 2 );
                 
     // Check border limits
     if( ( pos.x < 1 || pos.x > n ) || ( pos.y < 1 || pos.y > n ) ){
         printf( "\nInvalid coordinates x y. Try again.\n" );
+        fflush( stdout );
         sleep(2);
         return false;
     }
@@ -279,6 +294,7 @@ bool send_shot( Player* player ){
 
     if( node != NULL && node -> cell.state != UNKNOWN ){
         printf( "\nAlready played in %hhu %hhu. Try again.\n", pos.x, pos.y );
+        fflush( stdout );
         sleep(2);
         return false;
     }
@@ -287,11 +303,14 @@ bool send_shot( Player* player ){
     // Send shot coords
     sprintf( buffer, "%hhu %hhu", pos.x, pos.y );
     printf( "\nDEBUG: sending %s\n", buffer );
+    fflush( stdout );
+    
     WRITE( buffer );
 
     // Receive enemy feedback
     READ( buffer );
     printf( "\nDEBUG: received %s\n", buffer );
+    fflush( stdout );
 
 
 
@@ -313,29 +332,35 @@ bool send_shot( Player* player ){
     player_node = get_node( player_board -> qtree, pos );
     player_target = &player_node -> cell;
 
-      
-    if( strcmp( buffer, "1" ) == 0 ){
+
+    byte state = atoi( buffer );
+    
+    if( state == HIT ){
         
         player_target -> state = HIT;
         print_board( player_board, true );
         printf( "\nHIT!\n" );
+        fflush( stdout );
                   
-    }else if( strcmp( buffer, "2" ) == 0 ){
+    }else if( state == MISS ){
 
         player_target -> state = MISS;
         print_board( player_board, true );
         player1_turn = !player1_turn;
         printf( "\nMISS.\n" );
+        fflush( stdout );
         
-    }else if( strcmp( buffer, "3" ) == 0 ){
+    }else if( state == FINISH ){
 
         game_finished = true;
         player_target -> state = HIT;
         print_board( player_board, true );
         printf( "\nGame has finished.\n" );
+        fflush( stdout );
         
     }else{
         printf( "\nUNKNOWN: \"%s\"\n", buffer );
+        fflush( stdout );
     }
 
                 
@@ -352,12 +377,14 @@ bool receive_shot( Player* player ){
     print_board( player_board, false );
     char msg[] = "\nIt's \"%s\" turn.\nPlease wait...\n> ";
     printf( msg, opponent_name );
+    fflush( stdout );
 
     // Receive shot coords from enemy
     Pos pos;
 
     READ( buffer );
     printf( "\nDEBUG: received %s\n", buffer );
+    fflush( stdout );
     sscanf( buffer, "%hhu %hhu", &pos.x, &pos.y );
 
 
@@ -396,6 +423,7 @@ bool receive_shot( Player* player ){
             WRITE( buffer );
             print_board( player_board, false );
             printf( "\nGame has finished.\n" );
+            fflush( stdout );
             return true;
         }
             
@@ -404,6 +432,7 @@ bool receive_shot( Player* player ){
         WRITE( buffer );
         print_board( player_board, false );
         printf( "\nGot hit by enemy!\n" );
+        fflush( stdout );
                     
     }else{
         
@@ -413,6 +442,7 @@ bool receive_shot( Player* player ){
         WRITE( buffer );
         print_board( player_board, false );
         printf( "\nEnemy missed shot.\n" );
+        fflush( stdout );
 
     }
     

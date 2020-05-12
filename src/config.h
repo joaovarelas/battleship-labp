@@ -37,7 +37,7 @@
 #define RIGHT 4
 #define ROTATE 5
 
-#define VERTICAL( D )     ( D == UP || D == DOWN )
+#define VERTICAL( D )   ( D == UP   || D == DOWN )
 #define HORIZONTAL( D ) ( D == LEFT || D == RIGHT )
 
 
@@ -48,13 +48,15 @@
 
 
 // Named Pipes
-int fd[2];
 #define MAX_BUF_SIZE 1024
 #define PIPE_NAME_FMT "/tmp/battleship-%d-%d"
 
-#define WRITE( BUF ) ( write( fd[0], BUF, MAX_BUF_SIZE ) )
-#define READ( BUF ) ( read( fd[1], BUF, MAX_BUF_SIZE ) )
+#define WRITE( BUF )  ( write( fd[0], BUF, MAX_BUF_SIZE ) )
+#define READ( BUF )   ( read(  fd[1], BUF, MAX_BUF_SIZE ) )
 
+    
+
+    
 // QuadTree definitions
 #define MAX_NODES 1600 + 1
 #define VALID_RANGE( P, P1, P2 ) ( P.x >= P1.x && P.x <= P2.x && P.y >= P1.y && P.y <= P2.y )
@@ -91,6 +93,10 @@ typedef struct _QBranch QBranch;
 
 // Byte (0 - 255)
 typedef unsigned char byte;
+
+
+// General purpose buffer
+char buffer[ MAX_BUF_SIZE ];
 
 
 #endif

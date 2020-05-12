@@ -4,6 +4,7 @@
 #include "board.h"
 #include "settings.h"
 #include "random.h"
+#include "server.h"
 
 Ship* init_ship(){
     
@@ -65,7 +66,7 @@ void manual_place_ship( Board* player_board, Board* ship_board ){
 
     printf( "\nEnter coordinates (x y) to place the ship:\n" );
 
-    byte z;
+    byte q;
     Pos pos;
     do{
         Board* tmp_board = init_board( n );
@@ -94,14 +95,16 @@ void manual_place_ship( Board* player_board, Board* ship_board ){
             char msg[] = "\nPlace the ship on board:\n"     \
                 "\n1 - Up\n2 - Down\n3 - Left\n4 - Right"   \
                 "\n5 - Rotate (clockwise)\n6 - Done\n> ";
-            
-            printf( msg );
-            
-            scanf( " %hhu", &z );
 
-            move_ship( z, &pos, ship_board );
+
+            do{
+                printf( msg );
+                fgets( buffer, sizeof( buffer ), stdin );
+            }while( sscanf( buffer, "%hhu", &q ) != 1 );
+
+            move_ship( q, &pos, ship_board );
             
-        }while( z != 6 || overlap );
+        }while( q != 6 || overlap );
 
         place_ship( player_board, ship_board, tmp_board );
             

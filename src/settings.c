@@ -2,7 +2,7 @@
 #include "settings.h"
 #include "ship.h"
 #include "board.h"
-
+#include "server.h"
 
 // Init global
 void init_settings(){
@@ -94,12 +94,13 @@ void change_settings(){
         "\nDo you want to view current ships format?" \
         "\n1 - Yes\n2 - No\n> ";
 
-    printf( msg, settings -> board_size, settings -> num_ships );
-    
-    byte x;
-    scanf( " %hhu", &x );
+    byte q;
+    do{
+        printf( msg, settings -> board_size, settings -> num_ships );
+        fgets( buffer, sizeof( buffer ), stdin );
+    }while( sscanf( buffer, "%hhu\n", &q ) != 1 );
 
-    if( x == 1 ){
+    if( q == 1 ){
         for( byte i = 1; i <= settings -> num_ships; i++ ){
             printf( "\nShip #%hhu\n", i );
         
@@ -109,29 +110,34 @@ void change_settings(){
 
         }
     }
-           
-    printf( "\n\nDo you want to change game settings?\n1 - Yes\n2 - No\n3 - Restore defaults\n> ");
+
+    do{
+        printf( "\n\nDo you want to change game settings?\n1 - Yes\n2 - No\n3 - Restore defaults\n> ");
+        fgets( buffer, sizeof( buffer ), stdin );
+    }while( sscanf( buffer, "%hhu", &q ) != 1 );
     
-        
-    scanf(" %hhu", &x);
-    
-    switch( x ){
+    switch( q ){
     case 1:
         {
             do{
-                printf( "\nNew board size (between 20 and 40):\n> " );
-                scanf( " %hhu", &settings -> board_size );
+                do{
+                    printf( "\nNew board size (between 20 and 40):\n> " );
+                    fgets( buffer, sizeof( buffer ), stdin );
+                }while( sscanf( buffer, "%hhu", &settings -> board_size ) != 1 );
                 
             }while( settings -> board_size < MIN_BOARD_SIZE
                     || settings -> board_size > MAX_BOARD_SIZE );
             
 
             do{
-                printf( "\nNew number of ships (between %hhu and %hhu):\n> ",
-                        MIN_SHIPS,
-                        MAX_SHIPS( settings -> board_size ) );
-            
-                scanf( " %hhu", &settings -> num_ships );
+                
+                do{
+                    printf( "\nNew number of ships (between %hhu and %hhu):\n> ",
+                            MIN_SHIPS,
+                            MAX_SHIPS( settings -> board_size ) );
+                    fgets( buffer, sizeof( buffer ), stdin );
+                }while( sscanf( buffer, "%hhu", &settings -> num_ships ) != 1 );
+                
             }while( settings -> num_ships < MIN_SHIPS
                     || settings -> num_ships > MAX_SHIPS( settings -> board_size ) );
 
@@ -143,10 +149,12 @@ void change_settings(){
                
             }
             
-            printf( "\nSave new settings to file?\n1 - Yes\n2 - No\n> " );
-            scanf( " %hhu", &x );
+            do{
+                printf( "\nSave new settings to file?\n1 - Yes\n2 - No\n> " );
+                fgets( buffer, sizeof( buffer ), stdin );
+            }while( sscanf( buffer, "%hhu", &q ) != 1 );
 
-            switch( x ){
+            switch( q ){
             case 1:
 
                 write_settings();
@@ -216,9 +224,11 @@ void build_new_ship( byte idx ){
         
         do{
             print_board( tmp_board, false );
-        
-            printf( "\nCoordinates (x y) to place one piece. (0 0) to finish:\n> " );
-            scanf( " (%hhu %hhu)", &pos.x, &pos.y );
+
+            do{
+                printf( "\nCoordinates (x y) to place one piece. (0 0) to finish:\n> " );
+                fgets( buffer, sizeof( buffer ), stdin );
+            }while( sscanf( buffer, "%hhu %hhu", &pos.x, &pos.y ) != 2 );
 
             if( pos.x == 0 || pos.y == 0 )
                 break;
@@ -264,10 +274,13 @@ void build_new_ship( byte idx ){
             "\nDo you want to finish and proceed?" \
             " (Choosing \"No\" will reset the ship)\n\n" \
             "1 - Yes\n2 - No\n> ";
-        printf( msg );
+    
     
         byte x;
-        scanf( " %hhu", &x );
+        do{
+            printf( msg );
+            fgets( buffer, sizeof( buffer ), stdin );
+        }while( sscanf( buffer, "%hhu", &x ) != 1 );
 
         if( x == 2 ){
             free_board( tmp_board );
