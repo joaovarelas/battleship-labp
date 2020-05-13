@@ -42,14 +42,14 @@ void load_settings(){
         while( line[ j ] != '\0' ){
             
             if( line[ j ] == '1' )
-                settings -> ship_shape[ i ][ j ] = true;
+                settings -> ship[ i ][ j ] = true;
             else
-                settings -> ship_shape[ i ][ j ] = false;
+                settings -> ship[ i ][ j ] = false;
             
             j++;
         }
         
-        settings -> ship_shape[ i ][ MAX_SHIP_SQUARE ] = '\0';
+        settings -> ship[ i ][ MAX_SHIP_SQUARE ] = '\0';
     }
 
     return;
@@ -73,7 +73,7 @@ void write_settings(){
 
         byte k = 0;
         while( k < MAX_SHIP_SQUARE )
-            fprintf( fp, "%hhu", settings -> ship_shape[ i ][ k++ ] );
+            fprintf( fp, "%hhu", settings -> ship[ i ][ k++ ] );
         
         fprintf( fp, "\n" );
     }
@@ -299,9 +299,9 @@ void build_new_ship( byte idx ){
         for( byte y = 0; y < MAX_SHIP_SIZE; y++ ){
 
             if( tmp_board -> matrix[ x ][ y ].ship != 0 ){
-                settings -> ship_shape[ idx ][ k ] = true;
+                settings -> ship[ idx ][ k ] = true;
             }else{
-                settings -> ship_shape[ idx ][ k ] = false;
+                settings -> ship[ idx ][ k ] = false;
             }
 
             k++;

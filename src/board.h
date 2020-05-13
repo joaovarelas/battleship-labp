@@ -7,8 +7,10 @@ typedef struct _Board {
     
     byte size; // 20x20 to 40x40
 
-    Cell** matrix; // Size^2 cells
-    QTree* qtree; // Save ship pieces as nodes
+    //union {
+        Cell** matrix; // Size^2 cells
+        QTree* qtree; // Save ship pieces as nodes
+    //} u;
     
     byte idx; // Current ship index. 1 to MAXSHIPS(size)
     Ship** ships; // Indexed ships
@@ -27,6 +29,7 @@ bool ship_overlap( Board* dst, Board* src, Pos pos );
 void rotate_board( Board* board );
 void shift_board( Board* board, byte move );
 
+void init_matrix( Board* board );
 void matrix_to_qtree( Board* board );
 
 void print_board( Board* board, bool game_mode );

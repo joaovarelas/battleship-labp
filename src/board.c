@@ -7,18 +7,30 @@ Board* init_board( byte n ){
     Board* board = ( Board* ) malloc ( sizeof( Board ) );
     board -> size = n;
 
-    Pos p1, p2;
-    init_pos( &p1, 1, 1 );
-    init_pos( &p2, n*n, n*n );
+    Pos p, q;
+    init_pos( &p, 1, 1 );
+    init_pos( &q, n*n, n*n );
 
-    board -> matrix = ( Cell** ) malloc ( n * sizeof( Cell* ) );
-    board -> qtree = init_qtree( p1, p2 );
+    init_matrix( board );
+    board -> qtree = init_qtree( p, q );
     
     board -> ships = ( Ship** ) malloc ( ( 1 + MAX_SHIPS( settings -> board_size ) ) * sizeof( Ship* ) );
     board -> idx = 0;
     board -> ships_alive = 0;
-
+     
     
+    for( byte i = 1; i <= MAX_SHIPS( settings -> board_size ) ; i++ ){
+        board -> ships[ i ] = init_ship();
+    }
+    
+    return board;
+}
+
+
+void init_matrix( Board* board ){
+    byte n = board -> size;
+    
+    board -> matrix = ( Cell** ) malloc ( n * sizeof( Cell* ) );
     for( byte i = 0; i < n ; i++ ){
         
         board -> matrix[ i ] = ( Cell* ) malloc ( n * sizeof( Cell ) );
@@ -29,12 +41,7 @@ Board* init_board( byte n ){
         }
                        
     }
-    
-    for( byte i = 1; i <= MAX_SHIPS( settings -> board_size ) ; i++ ){
-        board -> ships[ i ] = init_ship();
-    }
-    
-    return board;
+    return;
 }
 
 
@@ -50,6 +57,7 @@ void free_board( Board* board ){
     for( byte i = 1; i <= MAX_SHIPS( board -> size ); i++ ){
         free( board -> ships[ i ] );
     }
+    
     free( board -> ships );
 
     free( board );
@@ -60,10 +68,12 @@ void free_board( Board* board ){
 void free_matrix( Board* board ){
     
     for( byte i = 0; i < board -> size; i++ ){
-        free( board -> matrix[ i ] );    
+        free( board -> matrix[ i ] );
     }
-    free( board -> matrix );
 
+    free( board -> matrix );
+    board -> matrix = NULL;
+    
     return;
 }
 
@@ -126,6 +136,7 @@ void print_cell( Board* board, Pos pos, bool game_mode ){
 
     // Print quadtree if it has nodes, else print matrix
     if( !board -> qtree -> empty ){
+
         pos.x++;
         pos.y++;
         
@@ -139,7 +150,7 @@ void print_cell( Board* board, Pos pos, bool game_mode ){
         
        
     }else{
-        
+      
         copy_cell( &cell, &board -> matrix[ pos.x ][ pos.y ]);
     }
     

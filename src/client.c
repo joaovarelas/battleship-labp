@@ -32,6 +32,7 @@ int main( int argc, char** argv ){
 
         ascii_art();
 
+        
         char menu[] =
             "\n1 - New game\n" \
             "2 - Settings\n" \

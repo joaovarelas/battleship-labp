@@ -174,21 +174,22 @@ void multiplayer( bool network ){
         fgets( buffer, sizeof( buffer ), stdin );
     }while( sscanf( buffer, "%hhu", &q ) != 1 );
 
-    bool host;
 
     do{
         printf( "\nEnter your nickname:\n> " );
         fgets( buffer, sizeof( buffer ), stdin );
     }while( sscanf( buffer, "%[^\n]s", name ) != 1 );
     
-    player = init_player( name );
 
     // Join game or enter existing game (room)
     // Using named pipes to synchronize both clients
+    // Using tcp/ip sockets to communicate over network
     if( q == 1 ){
         
         if( network ) host_network_game(); 
         else host_local_game();
+
+        send_settings();
         
         host = true;
         
@@ -196,10 +197,13 @@ void multiplayer( bool network ){
         
         if( network ) join_network_game();
         else join_local_game();
+
+        receive_settings();
         
         host = false;
     }
-
+    
+    player = init_player( name );
     setup_player( player );
 
     wait_opponent();
@@ -209,7 +213,7 @@ void multiplayer( bool network ){
     /*
       Start the game
     */
-    start_multiplayer_game( host );
+    start_multiplayer_game();
 
     
     printf( "\n\nGame finished!\nThe winner is \"%s\".\n\nDo you want to play again?\n",
@@ -218,14 +222,17 @@ void multiplayer( bool network ){
 
 
     close_fd();
-    end_fifo();
+    
+    if( !network )
+        end_fifo();
+    
     free_player( player );
     
     return;
 }
 
 
-void start_multiplayer_game( bool host ){
+void start_multiplayer_game(){
 
     if( host ){
         

@@ -2,6 +2,8 @@
 #include "server.h"
 #include "random.h"
 #include "game.h"
+#include "ship.h"
+#include "board.h"
 
 void host_local_game(){
 
@@ -104,7 +106,7 @@ void host_network_game(){
         addr.sin_addr.s_addr = INADDR_ANY;
         addr.sin_port = htons( port );
 
-        inet_ntop( AF_INET, &addr.sin_addr, host, sizeof( host ) );
+        inet_ntop( AF_INET, &addr.sin_addr, hostname, sizeof( hostname ) );
         
         if( bind( fd[0], (struct sockaddr *)&addr, sizeof( struct sockaddr ) ) == 0 )
             can_bind = true;
@@ -115,8 +117,7 @@ void host_network_game(){
     
     listen( fd[0], 1 );
 
-    printf( "\nWaiting for incoming connection... (%s:%hu)\n",
-            host, port );
+    printf( "\nWaiting for incoming connection... (%s:%hu)\n", hostname, port );
     
     sockin_size = sizeof( struct sockaddr_in );
         
@@ -130,7 +131,7 @@ void host_network_game(){
     
     printf( "\nReceived connection from \"%s\" (%s)\n",
             opponent_name, inet_ntoa( remote_addr.sin_addr ) );
-
+    
     sleep(2);
      
     return;
@@ -139,39 +140,53 @@ void host_network_game(){
 
 
 void join_network_game(){
-    
-    do{
-        printf( "\nEnter host to connect (IP address or hostname):\n> " );
-        fflush( stdout );
-        fgets( buffer, sizeof( buffer ), stdin );
-    }while( sscanf( buffer, "%s", host ) != 1 );
-
-    do{
-        printf( "\nEnter port to connect:\n> " );
-        fflush( stdout );
-        fgets( buffer, sizeof( buffer ), stdin );
-    }while( sscanf( buffer, "%hu", &port ) != 1 );
 
     struct hostent* entity;
     struct sockaddr_in remote_addr;
 
-    entity = gethostbyname( host );
-    fd[0] = socket( AF_INET, SOCK_STREAM, 0 );
-    fd[1] = fd[0]; // Duplex socket
+    bool connected = false;
+    
+    do{
+        
+        do{
+            printf( "\nEnter host to connect (IP address or hostname):\n> " );
+            fflush( stdout );
+            fgets( buffer, sizeof( buffer ), stdin );
+        }while( sscanf( buffer, "%s", hostname ) != 1 );
 
-    remote_addr.sin_family = AF_INET;
-    remote_addr.sin_port = htons( port );
-    remote_addr.sin_addr = *((struct in_addr *)entity -> h_addr );
+        do{
+            printf( "\nEnter port to connect:\n> " );
+            fflush( stdout );
+            fgets( buffer, sizeof( buffer ), stdin );
+        }while( sscanf( buffer, "%hu", &port ) != 1 );
+
+ 
+
+        entity = gethostbyname( hostname );
+        fd[0] = socket( AF_INET, SOCK_STREAM, 0 );
+        fd[1] = fd[0]; // Duplex socket
+       
+        remote_addr.sin_family = AF_INET;
+        remote_addr.sin_port = htons( port );
+        remote_addr.sin_addr = *((struct in_addr *)entity -> h_addr );
    
-    connect( fd[0], (struct sockaddr *)&remote_addr, sizeof(struct sockaddr) );
+        int c = connect( fd[0], (struct sockaddr *)&remote_addr, sizeof(struct sockaddr) );
 
+        if( entity == NULL || fd[0] == -1 || c == -1 )
+            printf( "\nError connecting to server... Try again.\n" );
+        else
+            connected = true;
+
+    }while( !connected );
+
+    
     READ( buffer );
     strcpy( opponent_name, buffer );
     
-    printf( "\nConnected to \"%s\" game (%s:%d)\n", opponent_name, host, port );
+    printf( "\nConnected to \"%s\" game (%s:%d)\n", opponent_name, hostname, port );
 
     WRITE( name );
-
+    
     sleep(2);
     
     return;
@@ -187,6 +202,73 @@ void wait_opponent(){
 
     printf( "\nOpponent is ready!\nStarting the game...\n" );
     fflush( stdout );
+    return;
+}
+
+void send_settings(){
+    printf( "\nSending settings...\n" );
+
+    sprintf( buffer, "%hhu", settings -> board_size );
+    WRITE( buffer );
+
+    printf( "\nSent board size! (%s)\n", buffer );
+ 
+    
+    sprintf( buffer, "%hhu", settings -> num_ships );
+    WRITE( buffer );
+
+    printf( "\nSent number of ships! (%s)\n", buffer );
+
+    char ship_str[ MAX_SHIP_SQUARE + 1 ];
+    for( byte k = 1; k <= settings -> num_ships; k++ ){
+        
+        for( byte i = 0; i < MAX_SHIP_SQUARE; i++ )
+            ship_str[ i ] = ( settings -> ship[ k ][ i ] ? '1' : '0' );
+
+        ship_str[ MAX_SHIP_SQUARE ] = '\0';
+        
+        sprintf( buffer, "%s", ship_str );
+        WRITE( buffer );
+
+        printf( "\nSent ship #%hhu format! (%s)\n", k, buffer );
+    }
+    
+
+    
+    return;
+}
+
+
+void receive_settings(){
+
+    printf( "\nReceiving settings...\n" );
+
+    READ( buffer );
+    settings -> board_size = (byte)atoi( buffer );
+
+    printf( "\nReceived board size! (%s)\n", buffer );
+        
+    READ( buffer );
+    settings -> num_ships = (byte)atoi( buffer );
+
+    printf( "\nReceived number of ships! (%s)\n", buffer );
+
+    for( int k = 1; k <= settings -> num_ships; k++ ){
+        
+        READ( buffer );
+        
+        for( int i = 0; i < MAX_SHIP_SQUARE; i++ )
+            settings -> ship[ k ][ i ] = ( buffer[ i ] == '1' ? true : false );
+
+        printf( "\nReceived ship #%hhu format! (%s)\n", k, buffer );
+        
+        Board* tmp_board = build_ship( k );
+        print_board( tmp_board, false );
+        free_board( tmp_board );
+        
+    }
+
+    
     return;
 }
 

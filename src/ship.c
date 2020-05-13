@@ -40,7 +40,7 @@ Board* build_ship( byte idx ){
     for( byte i = 0; i < MAX_SHIP_SIZE; i++ ){
         for( byte j = 0; j < MAX_SHIP_SIZE; j++ ){
             
-            bool piece = settings -> ship_shape[ idx ][ k ];
+            bool piece = settings -> ship[ idx ][ k ];
 
             tmp_board -> matrix[ i ][ j ].ship = ( piece ) ? idx : 0 ;
 
@@ -119,7 +119,8 @@ void manual_place_ship( Board* player_board, Board* ship_board ){
 
 
 void random_place_ship( Board* player_board, Board* ship_board ){
-
+    
+   
     byte n = settings -> board_size;
     
     byte upper = n - BOARD_SPAN;
@@ -172,6 +173,7 @@ void random_place_ship( Board* player_board, Board* ship_board ){
         
     }while( !placed );
 
+    
  
     return;
 }

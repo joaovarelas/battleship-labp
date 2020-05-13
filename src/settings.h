@@ -5,7 +5,7 @@ typedef struct _Settings {
     
     byte board_size;
     byte num_ships;
-    bool ship_shape[ MAX_SHIPS( MAX_BOARD_SIZE ) + 1 ][ MAX_SHIP_SQUARE ];
+    bool ship[ MAX_SHIPS( MAX_BOARD_SIZE ) + 1 ][ MAX_SHIP_SQUARE ];
     
 } Settings;
 
