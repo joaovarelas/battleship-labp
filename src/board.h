@@ -8,8 +8,8 @@ typedef struct _Board {
     byte size; // 20x20 to 40x40
 
     //union {
-        Cell** matrix; // Size^2 cells
-        QTree* qtree; // Save ship pieces as nodes
+    Cell** matrix; // Size^2 cells
+    QTree* qtree; // Save ship pieces as nodes
     //} u;
     
     byte idx; // Current ship index. 1 to MAXSHIPS(size)
