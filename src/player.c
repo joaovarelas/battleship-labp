@@ -32,48 +32,47 @@ void setup_player( Player* player ){
 
     byte q;
     do{
-        printf( "\n1 - Random Strategy\n" );
-        printf( "2 - Custom Strategy\n> " );
-        fgets( buffer, sizeof( buffer ), stdin );
-    }while( sscanf( buffer, "%hhu", &q ) != 1 );
+
+	byte qq;
+	do{
+	    printf( "\n1 - Random Strategy\n2 - Custom Strategy\n> " );
+	    fgets( buffer, sizeof( buffer ), stdin );
+	}while( sscanf( buffer, "%hhu", &qq ) != 1 );
 
 
-
-    byte qq;
-    do{
-
-        byte i = 1;
-        while( i <= settings -> num_ships ) {
+	byte i = 1;
+	while( i <= settings -> num_ships ) {
                 
-            Board* ship = build_ship( i );
+	    Board* ship = build_ship( i );
 
-            // Place ship on board (randomly or manually)
-            if( q == 1 ){
-                random_place_ship( player -> board, ship );
-            }else{
-                manual_place_ship( player -> board, ship );
-            }
-        
-            free_board( ship );
+	    // Place ship on board (randomly or manually)
+	    if( qq == 1 ) random_place_ship( player -> board, ship );
+	    else manual_place_ship( player -> board, ship );
+	
+	    free_board( ship );
                 
-            i++;
-        }
-        
-        do{
-            print_board( player -> board, false );
-            printf( "\nDo you want to use this strategy?\n1 - Yes\n2 - No\n> " );
-            fgets( buffer, sizeof( buffer ), stdin );
-        }while( sscanf( buffer, "%hhu", &qq ) != 1 );
+	    i++;
+	}
 
-        // Reset board
-        if( qq != 1 ){
-            free_board( player -> board );
-            player -> board = init_board( settings -> board_size );
-        }
-    
-    }while( qq != 1 );
 
+	print_board( player -> board, false );
+	    
+	do{
+	    printf( "\nDo you want to proceed with this board?\n1 - Yes\n2 - No\n> " );
+	    fgets( buffer, sizeof( buffer ), stdin );
+	}while( sscanf( buffer, "%hhu", &q ) != 1 );
+
+	if( q != 1 ){
+	    
+	    // Reset board and place ships over again
+	    free_board( player -> board );
+	    player -> board = init_board( settings -> board_size );
+	    
+	}
+	
+    }while( q != 1 );
     
+      
     // Convert n x n cell matrix to quadtree
     matrix_to_qtree( player -> board );
     
@@ -84,6 +83,8 @@ void setup_player( Player* player ){
     // Print final board to player
     print_board( player -> board, false );
     printf( "\nFinal board of player \"%s\":\n", player -> name );
+
+
 
     return;
 }

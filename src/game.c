@@ -4,7 +4,11 @@
 #include "quadtree.h"
 #include "server.h"
 
-void play_by_turns(){
+void play_offline(){
+    
+    byte n = settings -> board_size;
+    
+    offline = true;
 
     do{
         printf( "\nSetting up Player #1\nPlayer Name:\n> " );
@@ -13,7 +17,6 @@ void play_by_turns(){
     
     Player* player1 = init_player ( name );
     setup_player( player1 );
-
     
 
     do{
@@ -25,9 +28,6 @@ void play_by_turns(){
     setup_player( player2 );
 
     
-  
-    byte n = settings -> board_size;
-
     // Select random player to start
     player1_turn = rand_bool();
     game_finished = false;
@@ -47,21 +47,22 @@ void play_by_turns(){
     do{
 
         Pos pos;
+
+	player = player1_turn ? player1 : player2;
+	enemy =  player1_turn ? player2 : player1;
                     
         do{
            
             char msg[] = "\nIt's \"%s\" turn.\nCoordinates x y to fire:\n> ";
 
-            player = player1_turn ? player1 : player2;
-            enemy =  player1_turn ? player2 : player1;
-        
             print_board( player -> board, true );
             printf( msg, player -> name );
                  
             fgets( buffer, sizeof( buffer ), stdin );
         }while( sscanf( buffer, "%hhu %hhu", &pos.x, &pos.y ) != 2 );
 
-        // Check border limits
+
+	// Check border limits
         if( ( pos.x < 1 || pos.x > n ) || ( pos.y < 1 || pos.y > n ) ){
             printf( "\nInvalid coordinates x y. Try again.\n" );
             continue;
@@ -78,65 +79,66 @@ void play_by_turns(){
 
         Cell* player_target;
 
-        // Get node at pos from player board
-        // We will use our board to store game state
-        // of opponent board as we hit
+
+        // Create node in our tree if it doesnt exist
+	// Needed to store information
         if( player_node == NULL ){
-            
-            Cell new_cell;
+
+	    Cell new_cell;
             init_cell( &new_cell, 0, UNKNOWN );
             
             QNode* new_node = init_qnode( pos, new_cell );
             insert_node( player_board -> qtree, new_node );
 
         }
-
-
+       
         // Go down the tree to find node in leaves
         player_node = get_node( player_board -> qtree, pos );
+
+	assert( player_node != NULL );
+	
         player_target = &player_node -> cell;
-              
-        
+	
+
         // Must play on cells that were not played before
-        if( player_target -> state != UNKNOWN ){
+        if( player_target != NULL && player_target -> state != UNKNOWN ){
             printf( "\nAlready played in %hhu %hhu. Try again.\n", pos.x, pos.y );
             sleep(2);
             continue;
         }
-        
+
 
         // Ship found at (x y). HIT!
-        if( enemy_node != NULL ){
+        if( enemy_node != NULL && enemy_node -> cell.ship != 0 ){
 
-            byte ship_idx =  enemy_node -> cell.ship;
+	    byte ship_idx =  enemy_node -> cell.ship;
             Ship* enemy_ship = enemy_board -> ships[ ship_idx ];
-      
+	    
             enemy_ship -> shot_count++;
 
+	   	    
             // Ship has no more pieces, then its dead
             if( enemy_ship -> shot_count == enemy_ship -> size ){
                 enemy_ship -> alive = false;
                 enemy_board -> ships_alive--;
             }
-
+	    
             // If player has no more ships, game finish
             if( enemy_board -> ships_alive == 0 ){
                 game_finished = true;
             }
-
-            
+	    
             // Use our board to store opponent board as we hit
             player_target -> state = HIT;
             
             print_board( player_board, true );
             printf( "\nHIT!\n" );
-           
 
         }
         // Missed :( Swap player turn
         else{
 
-            // No ship found in target cell
+	    // No ship found in target cell
             player_target -> state = MISS;
             player1_turn = !player1_turn;
 
@@ -150,7 +152,7 @@ void play_by_turns(){
         
     }while( !game_finished );
 
-    printf( "\n\nGame finished!\nThe winner is \"%s\".\n\nDo you want to play again?\n",
+    printf( "\n\nGame finished!\nThe winner is \"%s\".\n\n",
             player -> name );
 
     
@@ -162,8 +164,10 @@ void play_by_turns(){
 
 
 
-void multiplayer( bool network ){
+void play_online(){
 
+    offline = false;
+    
     char menu[] =
         "\n1 - Create new game\n" \
         "2 - Join existing game\n> ";              
@@ -186,20 +190,14 @@ void multiplayer( bool network ){
     // Using tcp/ip sockets to communicate over network
     if( q == 1 ){
         
-        if( network ) host_network_game(); 
-        else host_local_game();
-
+        network ? host_network_game() : host_local_game();
         send_settings();
-        
         host = true;
         
     }else{
         
-        if( network ) join_network_game();
-        else join_local_game();
-
+        network ? join_network_game() : join_local_game();
         receive_settings();
-        
         host = false;
     }
     
@@ -208,31 +206,31 @@ void multiplayer( bool network ){
 
     wait_opponent();
     
-    game_finished = false;
-
     /*
       Start the game
     */
-    start_multiplayer_game();
-
-    
-    printf( "\n\nGame finished!\nThe winner is \"%s\".\n\nDo you want to play again?\n",
-            ( host ? ( player1_turn ? player -> name : opponent_name )
-              : ( player1_turn ? opponent_name : player -> name ) ) );
+    start_game();
 
 
-    close_fd();
-    
-    if( !network )
-        end_fifo();
-    
+
+    // Game finished
     free_player( player );
+
+    close( fd[0] );
+    
+    if( !network ) {
+	close( fd[1] );
+	unlink( in );
+	unlink( out );
+    }
     
     return;
 }
 
 
-void start_multiplayer_game(){
+void start_game(){
+
+    game_finished = false;
 
     if( host ){
         
@@ -271,6 +269,10 @@ void start_multiplayer_game(){
         sleep( 2 );
 
     }while( !game_finished );
+
+    printf( "\n\nGame finished!\nThe winner is \"%s\".\n\n",
+            ( host ? ( player1_turn ? player -> name : opponent_name )
+              : ( player1_turn ? opponent_name : player -> name ) ) );
     
     return;
 }
@@ -314,13 +316,12 @@ bool send_shot( Player* player ){
     // Send shot coords
     sprintf( buffer, "%hhu %hhu", pos.x, pos.y );
     fflush( stdout );
-    
     WRITE( buffer );
 
+    
     // Receive enemy feedback
     READ( buffer );
     fflush( stdout );
-
 
 
     // Set target cell considering (x y)
@@ -329,10 +330,12 @@ bool send_shot( Player* player ){
     Cell* player_target;
 
 
+    // Create node in our tree if it doesnt exist
     if( player_node == NULL ){
 
         Cell new_cell;
         init_cell( &new_cell, 0, UNKNOWN );
+	
         QNode* new_node = init_qnode( pos, new_cell );
         insert_node( player_board -> qtree, new_node );
 
@@ -371,7 +374,7 @@ bool send_shot( Player* player ){
         fflush( stdout );
         
     }else{
-        printf( "\nUNKNOWN: \"%s\"\n", buffer );
+        printf( "\nERROR: received unknown data: \"%s\"\n", buffer );
         fflush( stdout );
     }
 
@@ -391,9 +394,10 @@ bool receive_shot( Player* player ){
     printf( msg, opponent_name );
     fflush( stdout );
 
-    // Receive shot coords from enemy
+    
     Pos pos;
-
+    
+    // Receive shot coords from enemy
     READ( buffer );
     fflush( stdout );
     sscanf( buffer, "%hhu %hhu", &pos.x, &pos.y );
@@ -415,14 +419,18 @@ bool receive_shot( Player* player ){
         
     }
 
+    // Get leaf node from our tree
     player_node = get_node( player_board -> qtree, pos );
     player_target = &player_node -> cell;
 
-    if( player_target -> ship > 0 ){
 
-        byte ship_idx =  player_target -> ship;
+    // Check if valid ship has been hit
+    byte ship_idx =  player_target -> ship;
+    if( ship_idx > 0 && ship_idx <= MAX_SHIPS( player_board -> size ) ){
+      
         Ship* player_ship = player_board -> ships[ ship_idx ];
 
+	// Ship destroyed
         player_ship -> shot_count++;
         if( player_ship -> shot_count == player_ship -> size ){
             
@@ -430,7 +438,8 @@ bool receive_shot( Player* player ){
             player_board -> ships_alive--;
             
         }
-                    
+
+	// If no ships alive then finish game (and lose)
         if( player_board -> ships_alive == 0 ){
             
             game_finished = true;
@@ -451,20 +460,21 @@ bool receive_shot( Player* player ){
         WRITE( buffer );
         print_board( player_board, false );
         printf( "\nGot hit by enemy!\n" );
-        fflush( stdout );
+    
                     
     }else{
         
-        player_target -> ship = 66;
+        player_target -> ship = 66; // Hack
         player1_turn = !player1_turn;
         
         sprintf( buffer, "%hhu", MISS );
         WRITE( buffer );
         print_board( player_board, false );
         printf( "\nEnemy missed shot.\n" );
-        fflush( stdout );
 
     }
     
+    fflush( stdout );
+	
     return true;
 }

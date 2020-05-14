@@ -233,8 +233,6 @@ void send_settings(){
         printf( "\nSent ship #%hhu format! (%s)\n", k, buffer );
     }
     
-
-    
     return;
 }
 
@@ -271,20 +269,3 @@ void receive_settings(){
     
     return;
 }
-
-
-void end_fifo(){
-    //printf( "\nDeleting FIFO \"%s\"\n", in );
-    unlink( in );
-    //printf( "\nDeleting FIFO \"%s\"\n", out );
-    unlink( out );
-    return;
-}
-
-
-void close_fd(){
-    close( fd[0] );
-    close( fd[1] );
-    return;
-}
-

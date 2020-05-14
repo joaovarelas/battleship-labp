@@ -21,8 +21,10 @@ typedef struct _Pos {
 void init_cell( Cell* cell, byte ship, State state );
 void init_pos( Pos* pos, byte x, byte y );
 
-void copy_pos( Pos* dst, Pos* src );
 void copy_cell( Cell* dst, Cell* src );
+void copy_pos( Pos* dst, Pos* src );
+
+bool equal_pos( Pos* p1, Pos* p2 );
 
 #endif
 

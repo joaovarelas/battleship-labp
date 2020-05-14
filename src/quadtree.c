@@ -8,9 +8,10 @@ QTree* init_qtree( Pos p1, Pos p2 ){
     copy_pos( &qtree -> p1, &p1 );
     copy_pos( &qtree -> p2, &p2 );
 
-    qtree -> empty = true;
-    qtree -> node = NULL;
+    qtree -> list = init_qnode_list( NULL );
 
+    qtree -> size = 0;
+    
     qtree -> nw = NULL;
     qtree -> ne = NULL;
     qtree -> sw = NULL;
@@ -29,6 +30,14 @@ QNode* init_qnode( Pos pos, Cell cell){
     return qnode;
 }
 
+QNodeList* init_qnode_list( QNode* node ){
+    QNodeList* list = ( QNodeList* ) malloc ( sizeof ( QNodeList ) );
+
+    list -> node = node;
+    list -> next = NULL;
+
+    return list;
+}
 
 void insert_node( QTree* qtree, QNode* node ){
 
@@ -38,14 +47,26 @@ void insert_node( QTree* qtree, QNode* node ){
     
     if( !VALID_RANGE( pos, p1, p2 ) )
         return;
-    
-    qtree -> empty = false;
+
+    qtree -> size++;
     
     if( IN_RANGE( p1, p2 ) ){
 
-        if( qtree -> node == NULL )
-            qtree -> node = node;
-            
+	if( qtree -> list -> node == NULL ){
+
+	    qtree -> list -> node = node;
+
+	}else{
+	    
+	    QNodeList* list = qtree -> list;
+
+	    while( list -> next != NULL )
+	        list = list -> next;
+
+	    list -> next = init_qnode_list( node );
+	    
+	}
+
         return;
     }
     
@@ -74,29 +95,47 @@ void insert_node( QTree* qtree, QNode* node ){
 QNode* get_node( QTree* qtree, Pos pos ){
 
     if( qtree == NULL )
-        return NULL;
-    
+	return NULL;
+       
     Pos p1 = qtree -> p1;
     Pos p2 = qtree -> p2;
     
     if( !VALID_RANGE( pos, p1, p2 ) )
         return NULL;
-
-    QNode* node = qtree -> node;
     
-    if( node != NULL ){
+
+    QNodeList* list = qtree -> list;
+    
+    if( list -> node != NULL ){
         
-        if( node -> pos.x == pos.x && node -> pos.y == pos.y )
-            return qtree -> node;
-        else
+        if( equal_pos( &list -> node -> pos, &pos ) ){
+	    
+            return list -> node;
+	    
+	}else{
+
+
+	    QNodeList* current = list;
+	    
+	    while( current != NULL ){
+
+		if( equal_pos( &current -> node -> pos, &pos ) ){
+		    return current -> node;
+		}
+
+		current = current -> next;
+	    }
+
             return NULL;
+	}
     }
     
     QTree** branch = select_branch( qtree, pos );
 
     if( *branch == NULL )
-        return NULL;
-    
+	return NULL;
+  
+
     return get_node( *branch, pos );
 }
 
@@ -124,26 +163,33 @@ QTree** select_branch( QTree* qtree, Pos pos ){
 
     
 void print_qtree( QTree* qtree ){
+
+    QNodeList* list = qtree -> list;
+	    
+    while( list != NULL ){
+	if( list -> node != NULL ){
+	    printf( "qtree -> node = pos: (%hhu, %hhu) | ship: %hhu | state: %hhu\n",        
+		    list -> node -> pos.x,
+		    list -> node -> pos.y,
+		    list -> node -> cell.ship,
+		    list -> node -> cell.state );
+	}
+	
+	list = list -> next;
+    }
     
-    if( qtree -> node != NULL )
-        printf( "qtree -> node -> pos = (%hhu, %hhu)\n" \
-                "qtree -> node -> cell.ship,state = %hhu, %hhu\n",
-                qtree -> node -> pos.x,
-                qtree -> node -> pos.y,
-                qtree -> node -> cell.ship,
-                qtree -> node -> cell.state );
 
     if( qtree -> nw != NULL )
-        print_qtree( qtree -> nw );
+	print_qtree( qtree -> nw );
     
     if( qtree -> ne != NULL )
-        print_qtree( qtree -> ne );
+	print_qtree( qtree -> ne );
     
     if( qtree -> sw != NULL )
-        print_qtree( qtree -> sw );
+	print_qtree( qtree -> sw );
     
     if( qtree -> se != NULL )
-        print_qtree( qtree -> se );
+	print_qtree( qtree -> se );
     
     return;
 }
@@ -151,9 +197,7 @@ void print_qtree( QTree* qtree ){
 
 void free_qtree( QTree* qtree ){
 
-    if( qtree -> node != NULL )
-        free( qtree -> node );
-
+    free_qnode_list( qtree -> list );
     
     if( qtree -> nw != NULL )
         free_qtree( qtree -> nw );
@@ -172,3 +216,11 @@ void free_qtree( QTree* qtree ){
     return;
 }
 
+void free_qnode_list( QNodeList* list ){
+
+    if( list -> next != NULL )
+	free_qnode_list( list -> next );
+   
+    free( list );
+    return;
+}

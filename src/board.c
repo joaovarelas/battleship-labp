@@ -52,7 +52,8 @@ void free_board( Board* board ){
     if( board -> matrix != NULL )
         free_matrix( board );
 
-    free_qtree( board -> qtree );
+    if( board -> qtree != NULL )
+	free_qtree( board -> qtree );
 
     for( byte i = 1; i <= MAX_SHIPS( board -> size ); i++ ){
         free( board -> ships[ i ] );
@@ -61,6 +62,8 @@ void free_board( Board* board ){
     free( board -> ships );
 
     free( board );
+
+    board = NULL;
     
     return;
 }
@@ -134,13 +137,28 @@ void print_cell( Board* board, Pos pos, bool game_mode ){
     
     Cell cell;
 
-    // Print quadtree if it has nodes, else print matrix
-    if( !board -> qtree -> empty ){
+    /*
+      printf( "\nDEBUG: print_cell()\n" );
+    
+      // Print quadtree if it has nodes, else print matrix
 
+      printf( "\nDEBUG: print_cell: board -> qtree == NULL ? %d\n",
+      board -> qtree == NULL );
+
+      printf( "\nDEBUG: print_cell: board -> qtree -> size = %d\n",
+      board -> qtree -> size );
+    */
+    if( board -> qtree -> size > 0 ){
+
+	
         pos.x++;
         pos.y++;
+
+	//printf( "\nDEBUG: print_cell: get_node\n" );
         
         QNode* node = get_node( board -> qtree, pos );
+
+	// printf( "\nDEBUG: print_cell: node == NULL ? %d\n", node == NULL );
         
         if( node != NULL ){
             copy_cell( &cell, &node -> cell );
@@ -165,7 +183,7 @@ void print_cell( Board* board, Pos pos, bool game_mode ){
             printf( " " );
             break;
         case HIT:
-            printf( "x" );
+            printf( "X" );
             break;
         default:
             break;
@@ -181,7 +199,7 @@ void print_cell( Board* board, Pos pos, bool game_mode ){
             printf( "•" );
             break;
         case 99:
-            printf( "x" );
+            printf( "X" );
             break;
         default:
             printf( "■" );

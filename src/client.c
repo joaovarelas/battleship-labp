@@ -19,75 +19,79 @@ void ascii_art(){
 
 
 int main( int argc, char** argv ){
-
     
     init_settings();
     load_settings();
     
     init_seed();
 
+   
+    char menu[] =
+	"\n1 - New game\n" \
+	"2 - Settings\n" \
+	"3 - Exit\n> ";
+    
+
     byte q;
 
-    do {
+    do{
 
-        ascii_art();
-
+	ascii_art();
+	
+	do{
+	    printf( menu );
+	    fgets( buffer, sizeof( buffer ), stdin );
+	}while( sscanf( buffer, "%hhu", &q ) != 1 );
         
-        char menu[] =
-            "\n1 - New game\n" \
-            "2 - Settings\n" \
-            "3 - Exit\n> ";
-
-        do{
-            printf( menu );
-            fgets( buffer, sizeof( buffer ), stdin );
-        }while( sscanf( buffer, "%hhu", &q ) != 1 );
+	switch( q ){
         
-        switch( q ){
-        
-        case 1:
-            {
+	case 1:
+	    {
                 
-                char menu[] =
-                    "\n1 - Play by turns\n" \
-                    "2 - Local multiplayer\n" \
-                    "3 - Internet multiplayer\n> ";              
+		char menu[] =
+		    "\n1 - Play by turns\n" \
+		    "2 - Local multiplayer\n" \
+		    "3 - Internet multiplayer\n> ";              
                 
-                byte qq;
-                do{
-                    printf( menu );
-                    fgets( buffer, sizeof( buffer ), stdin );
-                }while( sscanf( buffer, "%hhu", &qq ) != 1 );
+		byte qq;
+	    
+		do{
+		    printf( menu );
+		    fgets( buffer, sizeof( buffer ), stdin );
+		}while( sscanf( buffer, "%hhu", &qq ) != 1 );
 
 
-                switch( qq ){
+		switch( qq ){
                 
-                case 1:
-                    play_by_turns();
-                    break;
-                case 2:
-                    multiplayer( false );
-                    break;
-                case 3:
-                    multiplayer( true );
-                    break;
-                default:
-                    break;
+		case 1:
+		    play_offline();
+		    break;
+		case 2:
+		    network = false;
+		    play_online();
+		    break;
+		case 3:
+		    network = true;
+		    play_online();
+		    break;
+		default:
+		    break;
             
-                }
-                break;
-            }
-        case 2:
-            change_settings();
-            break;
+		}
+		q = 3;
+		break;
+	    }
+	case 2:
+	    change_settings();
+	    break;
 
-        default:
-            printf("\nAhoy, Captain!\n");
-            break;
-        }
+	default:
+	    break;
+	}
         
     }while( q != 3 );
 
+    printf("\nAhoy, Captain!\n");
     free( settings );
     
     return 0;

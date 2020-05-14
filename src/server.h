@@ -21,7 +21,4 @@ void receive_settings();
 
 void wait_opponent();
 
-void close_fd();
-void end_fifo();
-    
 #endif

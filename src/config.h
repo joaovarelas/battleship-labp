@@ -7,6 +7,7 @@
 #include <netdb.h> 
 #include <netinet/in.h> 
 #include <pthread.h>
+#include <semaphore.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,7 +20,7 @@
 #include <unistd.h>
 
 
-// Board definitions
+// Board
 #define MIN_BOARD_SIZE 20
 #define MAX_BOARD_SIZE 40
 
@@ -32,18 +33,12 @@
 #define MAX_LINE_SIZE 32
 
 
-// Board movement definitions
-#define UP 1
-#define DOWN 2
-#define LEFT 3
-#define RIGHT 4
-#define ROTATE 5
-
+// Board movement 
 #define VERTICAL( D )   ( D == UP   || D == DOWN )
 #define HORIZONTAL( D ) ( D == LEFT || D == RIGHT )
 
 
-// Settings definitions
+// Settings
 #define SETTINGS_FILE "settings/settings"
 #define SETTINGS_BACKUP "settings/settings_default"
 
@@ -58,7 +53,7 @@
 #define RECV(  BUF )   ( recv(  fd[1], BUF, sizeof( BUF ), 0) )
 
     
-// QuadTree definitions
+// QuadTree
 #define MAX_NODES 1600 + 1
 #define VALID_RANGE( P, P1, P2 ) ( P.x >= P1.x && P.x <= P2.x && P.y >= P1.y && P.y <= P2.y )
 #define IN_RANGE( P1, P2 ) ( P2.x - P1.x  <= 1 && P2.y - P1.y <= 1 )
@@ -96,6 +91,10 @@ typedef unsigned char byte;
 
 // General purpose buffer
 char buffer[ MAX_BUF_SIZE ];
+
+
+// Mutual exclusion for threads
+sem_t mutex;
 
 
 #endif

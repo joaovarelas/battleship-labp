@@ -3,6 +3,8 @@
 
 #include "ship.h"
 
+typedef enum { UP = 1, DOWN, LEFT, RIGHT, ROTATE } Move;
+
 typedef struct _Board {
     
     byte size; // 20x20 to 40x40
