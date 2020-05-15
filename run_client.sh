@@ -1,3 +1,3 @@
 #!/bin/sh
 
-reset && cd src/ && make clean client && cd ../ && ./bin/client
+reset && make clean client && make run

@@ -44,15 +44,19 @@
 
 
 // Named pipes and network
+#define IN 0
+#define OUT 1
+#define ERR 2
+
 #define MAX_BUF_SIZE 256
 #define PIPE_NAME_FMT "/tmp/battleship-%d-%d"
 
-#define WRITE( BUF )   ( write( fd[0], BUF, sizeof( BUF ) ) )
-#define READ(  BUF )   ( read(  fd[1], BUF, sizeof( BUF ) ) )
-#define SEND(  BUF )   ( send(  fd[0], BUF, sizeof( BUF ), 0) )
-#define RECV(  BUF )   ( recv(  fd[1], BUF, sizeof( BUF ), 0) )
+#define READ(  FD, BUF )   ( read(  FD, BUF, sizeof( BUF ) ) )
+#define WRITE( FD, BUF )   ( write( FD, BUF, sizeof( BUF ) ) )
+#define RECV(  FD, BUF )   ( recv(  FD, BUF, sizeof( BUF ), 0 ) )
+#define SEND(  FD, BUF )   ( send(  FD, BUF, sizeof( BUF ), 0 ) )
 
-    
+
 // QuadTree
 #define MAX_NODES 1600 + 1
 #define VALID_RANGE( P, P1, P2 ) ( P.x >= P1.x && P.x <= P2.x && P.y >= P1.y && P.y <= P2.y )
@@ -94,7 +98,7 @@ char buffer[ MAX_BUF_SIZE ];
 
 
 // Mutual exclusion for threads
-sem_t mutex;
+sem_t sem;
 
 
 #endif

@@ -2,8 +2,10 @@
 #define SERVER_H_
 
 int fd[2];
-char in[ MAX_LINE_SIZE ]; // Host to Guest
-char out[ MAX_LINE_SIZE ]; // Guest to Host
+int fd2[2];
+
+char fifo1[ MAX_LINE_SIZE ];
+char fifo2[ MAX_LINE_SIZE ];
 
 char hostname[ MAX_LINE_SIZE ];
 unsigned short port;

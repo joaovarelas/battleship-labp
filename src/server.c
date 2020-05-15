@@ -9,20 +9,20 @@ void host_local_game(){
 
     int game_id = rand_int( 10000, 99999 );
     
-    sprintf( in,  PIPE_NAME_FMT, game_id, 0 );
-    sprintf( out, PIPE_NAME_FMT, game_id, 1 );
+    sprintf( fifo1, PIPE_NAME_FMT, game_id, 1 );
+    sprintf( fifo2, PIPE_NAME_FMT, game_id, 2 );
 
     printf( "\nCreated new room ID: %d\nShare with your friend to join the game.\n", game_id );
     fflush( stdout );
 
-    mkfifo( in,  0666 );
-    mkfifo( out, 0666 );
+    mkfifo( fifo1, 0666 );
+    mkfifo( fifo2, 0666 );
 
-    fd[0] = open( in,  O_CREAT | O_WRONLY ); // in
-    fd[1] = open( out, O_CREAT | O_RDONLY ); // out
+    fd[IN]  = open( fifo1, O_CREAT | O_RDWR ); // Read from fifo1
+    fd[OUT] = open( fifo2, O_CREAT | O_RDWR ); // Write to fifo2
 
-    READ( buffer );
-    WRITE( name );
+    READ(  fd[IN],  buffer );
+    WRITE( fd[OUT], name   );
 
     printf( "\nPlayer \"%s\" joined! Starting game...\n", buffer );
     fflush( stdout );
@@ -50,17 +50,17 @@ void join_local_game(){
             fgets( buffer, sizeof( buffer ), stdin );
         }while( sscanf( buffer, "%d", &game_id ) != 1 );
             
-        sprintf( in, PIPE_NAME_FMT, game_id, 0 );
-        sprintf( out, PIPE_NAME_FMT, game_id, 1 );
+        sprintf( fifo1, PIPE_NAME_FMT, game_id, 1 );
+        sprintf( fifo2, PIPE_NAME_FMT, game_id, 2 );
 
-        stat( in, &stat1 );
-        stat( out, &stat2 );
+        stat( fifo1, &stat1 );
+        stat( fifo2, &stat2 );
             
         if( S_ISFIFO( stat1.st_mode ) && S_ISFIFO( stat2.st_mode ) ){
 
             valid_id = true;
-            fd[1] = open( in,  O_RDONLY ); // out
-            fd[0] = open( out, O_WRONLY ); // in
+            fd[IN] =  open( fifo2, O_RDWR ); // Read from fifo2
+            fd[OUT] = open( fifo1, O_RDWR ); // Write to fifo1
                 
         }else{
             printf( "\nInvalid game ID.\n" );
@@ -70,8 +70,8 @@ void join_local_game(){
             
     }while( !valid_id );
 
-    WRITE( name );
-    READ( buffer );
+    WRITE( fd[OUT],  name );
+    READ(  fd[IN], buffer );
         
     printf( "\nJoined \"%s\" game successfully! (ID: %d)\n", buffer, game_id );
     fflush( stdout );
@@ -100,7 +100,7 @@ void host_network_game(){
         }while( sscanf( buffer, "%hu", &port ) != 1 );
 
 
-        fd[0] = socket( AF_INET, SOCK_STREAM, 0 );
+        fd[IN] = socket( AF_INET, SOCK_STREAM, 0 );
 
         addr.sin_family = AF_INET;
         addr.sin_addr.s_addr = INADDR_ANY;
@@ -108,25 +108,26 @@ void host_network_game(){
 
         inet_ntop( AF_INET, &addr.sin_addr, hostname, sizeof( hostname ) );
         
-        if( bind( fd[0], (struct sockaddr *)&addr, sizeof( struct sockaddr ) ) == 0 )
+        if( bind( fd[IN], (struct sockaddr *)&addr, sizeof( struct sockaddr ) ) == 0 )
             can_bind = true;
         else
             printf( "\nError binding name to socket... Try a different port.\n" );
 
     }while( !can_bind );
     
-    listen( fd[0], 1 );
+    listen( fd[IN], 1 );
 
     printf( "\nWaiting for incoming connection... (%s:%hu)\n", hostname, port );
     
     sockin_size = sizeof( struct sockaddr_in );
         
-    fd[0] = accept( fd[0], (struct sockaddr *)&remote_addr, &sockin_size );
-    fd[1] = fd[0]; // Duplex socket
+    fd[IN] = accept( fd[IN], (struct sockaddr *)&remote_addr, &sockin_size );
+    fd[OUT] = fd[IN]; // Full duplex socket
     
-    WRITE( name );
-
-    READ( buffer );
+    WRITE( fd[OUT], name );
+    
+    READ(  fd[IN],  buffer );
+    
     strcpy( opponent_name, buffer );
     
     printf( "\nReceived connection from \"%s\" (%s)\n",
@@ -161,18 +162,17 @@ void join_network_game(){
         }while( sscanf( buffer, "%hu", &port ) != 1 );
 
  
-
         entity = gethostbyname( hostname );
-        fd[0] = socket( AF_INET, SOCK_STREAM, 0 );
-        fd[1] = fd[0]; // Duplex socket
+        fd[IN] = socket( AF_INET, SOCK_STREAM, 0 );
+        fd[OUT] = fd[IN]; // Full duplex socket
        
         remote_addr.sin_family = AF_INET;
         remote_addr.sin_port = htons( port );
-        remote_addr.sin_addr = *((struct in_addr *)entity -> h_addr );
+        remote_addr.sin_addr = *((struct in_addr *)entity -> h_addr_list[0] );
    
-        int c = connect( fd[0], (struct sockaddr *)&remote_addr, sizeof(struct sockaddr) );
+        int c = connect( fd[OUT], (struct sockaddr *)&remote_addr, sizeof(struct sockaddr) );
 
-        if( entity == NULL || fd[0] == -1 || c == -1 )
+        if( entity == NULL || fd[OUT] == -1 || c == -1 )
             printf( "\nError connecting to server... Try again.\n" );
         else
             connected = true;
@@ -180,12 +180,12 @@ void join_network_game(){
     }while( !connected );
 
     
-    READ( buffer );
+    READ( fd[IN], buffer );
     strcpy( opponent_name, buffer );
     
     printf( "\nConnected to \"%s\" game (%s:%d)\n", opponent_name, hostname, port );
 
-    WRITE( name );
+    WRITE( fd[OUT], name );
     
     sleep(2);
     
@@ -197,8 +197,8 @@ void wait_opponent(){
 
     fflush( stdout );
 
-    WRITE( "ready" );
-    READ( buffer );
+    WRITE( fd[OUT], "ready" );
+    READ(  fd[IN], buffer );
 
     printf( "\nOpponent is ready!\nStarting the game...\n" );
     fflush( stdout );
@@ -209,13 +209,13 @@ void send_settings(){
     printf( "\nSending settings...\n" );
 
     sprintf( buffer, "%hhu", settings -> board_size );
-    WRITE( buffer );
+    WRITE( fd[OUT], buffer );
 
     printf( "\nSent board size! (%s)\n", buffer );
  
     
     sprintf( buffer, "%hhu", settings -> num_ships );
-    WRITE( buffer );
+    WRITE( fd[OUT], buffer );
 
     printf( "\nSent number of ships! (%s)\n", buffer );
 
@@ -228,7 +228,7 @@ void send_settings(){
         ship_str[ MAX_SHIP_SQUARE ] = '\0';
         
         sprintf( buffer, "%s", ship_str );
-        WRITE( buffer );
+        WRITE( fd[OUT], buffer );
 
         printf( "\nSent ship #%hhu format! (%s)\n", k, buffer );
     }
@@ -241,19 +241,19 @@ void receive_settings(){
 
     printf( "\nReceiving settings...\n" );
 
-    READ( buffer );
+    READ( fd[IN], buffer );
     settings -> board_size = (byte)atoi( buffer );
 
     printf( "\nReceived board size! (%s)\n", buffer );
         
-    READ( buffer );
+    READ( fd[IN], buffer );
     settings -> num_ships = (byte)atoi( buffer );
 
     printf( "\nReceived number of ships! (%s)\n", buffer );
 
     for( int k = 1; k <= settings -> num_ships; k++ ){
         
-        READ( buffer );
+        READ( fd[IN], buffer );
         
         for( int i = 0; i < MAX_SHIP_SQUARE; i++ )
             settings -> ship[ k ][ i ] = ( buffer[ i ] == '1' ? true : false );

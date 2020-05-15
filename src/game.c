@@ -178,16 +178,18 @@ void play_online(){
         fgets( buffer, sizeof( buffer ), stdin );
     }while( sscanf( buffer, "%hhu", &q ) != 1 );
 
-
     do{
         printf( "\nEnter your nickname:\n> " );
         fgets( buffer, sizeof( buffer ), stdin );
     }while( sscanf( buffer, "%[^\n]s", name ) != 1 );
-    
 
+    player = init_player( name ); 
+
+    
     // Join game or enter existing game (room)
-    // Using named pipes to synchronize both clients
-    // Using tcp/ip sockets to communicate over network
+    // using named pipes to synchronize both clients
+    //  or using tcp/ip sockets to communicate over network
+    
     if( q == 1 ){
         
         network ? host_network_game() : host_local_game();
@@ -201,27 +203,25 @@ void play_online(){
         host = false;
     }
     
-    player = init_player( name );
+
     setup_player( player );
 
     wait_opponent();
+
     
-    /*
-      Start the game
-    */
+    // Start the game
     start_game();
 
-
-
+    
     // Game finished
     free_player( player );
 
-    close( fd[0] );
+    close( fd[OUT] );
     
     if( !network ) {
-	close( fd[1] );
-	unlink( in );
-	unlink( out );
+	close( fd[IN] );
+	unlink( fifo1 );
+	unlink( fifo2 );
     }
     
     return;
@@ -237,12 +237,12 @@ void start_game(){
         // Decide who starts and send
         player1_turn = rand_bool();
         sprintf( buffer, "%d", player1_turn );
-        WRITE( buffer );
+        WRITE( fd[OUT], buffer );
     
     }else{
 
         // Receive who starts from host
-        READ( buffer );
+        READ( fd[IN], buffer );
         player1_turn = ( atoi( buffer ) == true ); 
 
     }
@@ -270,6 +270,7 @@ void start_game(){
 
     }while( !game_finished );
 
+    
     printf( "\n\nGame finished!\nThe winner is \"%s\".\n\n",
             ( host ? ( player1_turn ? player -> name : opponent_name )
               : ( player1_turn ? opponent_name : player -> name ) ) );
@@ -316,11 +317,11 @@ bool send_shot( Player* player ){
     // Send shot coords
     sprintf( buffer, "%hhu %hhu", pos.x, pos.y );
     fflush( stdout );
-    WRITE( buffer );
+    WRITE( fd[OUT], buffer );
 
     
     // Receive enemy feedback
-    READ( buffer );
+    READ( fd[IN], buffer );
     fflush( stdout );
 
 
@@ -398,7 +399,7 @@ bool receive_shot( Player* player ){
     Pos pos;
     
     // Receive shot coords from enemy
-    READ( buffer );
+    READ( fd[IN], buffer );
     fflush( stdout );
     sscanf( buffer, "%hhu %hhu", &pos.x, &pos.y );
 
@@ -446,7 +447,7 @@ bool receive_shot( Player* player ){
             player_target -> ship = 99; // Hack
             
             sprintf( buffer, "%hhu", FINISH );
-            WRITE( buffer );
+            WRITE( fd[OUT], buffer );
             print_board( player_board, false );
             printf( "\nGame has finished.\n" );
             fflush( stdout );
@@ -457,7 +458,7 @@ bool receive_shot( Player* player ){
         player_target -> ship = 99; // Hack
         
         sprintf( buffer, "%hhu", HIT );
-        WRITE( buffer );
+        WRITE( fd[OUT], buffer );
         print_board( player_board, false );
         printf( "\nGot hit by enemy!\n" );
     
@@ -468,7 +469,7 @@ bool receive_shot( Player* player ){
         player1_turn = !player1_turn;
         
         sprintf( buffer, "%hhu", MISS );
-        WRITE( buffer );
+        WRITE( fd[OUT], buffer );
         print_board( player_board, false );
         printf( "\nEnemy missed shot.\n" );
 
