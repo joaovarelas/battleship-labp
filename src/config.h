@@ -49,12 +49,13 @@
 #define ERR 2
 
 #define MAX_BUF_SIZE 256
+#define SEM_NAME "pSem"
 #define PIPE_NAME_FMT "/tmp/battleship-%d-%d"
 
-#define READ(  FD, BUF )   ( read(  FD, BUF, sizeof( BUF ) ) )
-#define WRITE( FD, BUF )   ( write( FD, BUF, sizeof( BUF ) ) )
-#define RECV(  FD, BUF )   ( recv(  FD, BUF, sizeof( BUF ), 0 ) )
-#define SEND(  FD, BUF )   ( send(  FD, BUF, sizeof( BUF ), 0 ) )
+#define READ(  BUF )   ( read(  select_fd(IN),  BUF, sizeof( BUF ) ) )
+#define WRITE( BUF )   ( write( select_fd(OUT), BUF, sizeof( BUF ) ) )
+#define RECV(  BUF )   ( recv(  select_fd(IN),  BUF, sizeof( BUF ), 0 ) )
+#define SEND(  BUF )   ( send(  select_fd(OUT), BUF, sizeof( BUF ), 0 ) )
 
 
 // QuadTree
@@ -98,7 +99,7 @@ char buffer[ MAX_BUF_SIZE ];
 
 
 // Mutual exclusion for threads
-sem_t sem;
+sem_t* sem;
 
 
 #endif

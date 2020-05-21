@@ -40,21 +40,23 @@ void setup_player( Player* player ){
 	}while( sscanf( buffer, "%hhu", &qq ) != 1 );
 
 
-	byte i = 1;
-	while( i <= settings -> num_ships ) {
-                
-	    Board* ship = build_ship( i );
+	byte idx = 1;
+	while( idx <= settings -> num_ships ) {
+
+	    Board* ship = build_ship( idx );
 
 	    // Place ship on board (randomly or manually)
-	    if( qq == 1 ) random_place_ship( player -> board, ship );
-	    else manual_place_ship( player -> board, ship );
+	    if( qq == 1 )
+                random_place_ship( player -> board, ship );
+	    else
+                manual_place_ship( player -> board, ship );
 	
 	    free_board( ship );
                 
-	    i++;
+	    idx++;
 	}
 
-
+        
 	print_board( player -> board, false );
 	    
 	do{
@@ -72,20 +74,33 @@ void setup_player( Player* player ){
 	
     }while( q != 1 );
     
-      
+
+    
+    #ifdef QUADTREE
+    
     // Convert n x n cell matrix to quadtree
     matrix_to_qtree( player -> board );
     
     // Get rid of matrix
     // Game state is now supported by a quad tree structure
     free_matrix( player -> board );
+
+    #pragma message( "[ + ] USING QUADTREE DATA STRUCTURE" )
+
+    #else
+
+    // Keep matrix
+    #pragma message( "[ + ] USING MATRIX DATA STRUCTURE" )
+
+    #endif
+
+   
     
     // Print final board to player
     print_board( player -> board, false );
     printf( "\nFinal board of player \"%s\":\n", player -> name );
 
-
-
+    
     return;
 }
 

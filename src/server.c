@@ -21,8 +21,8 @@ void host_local_game(){
     fd[IN]  = open( fifo1, O_CREAT | O_RDWR ); // Read from fifo1
     fd[OUT] = open( fifo2, O_CREAT | O_RDWR ); // Write to fifo2
 
-    READ(  fd[IN],  buffer );
-    WRITE( fd[OUT], name   );
+    READ( buffer );
+    WRITE( name );
 
     printf( "\nPlayer \"%s\" joined! Starting game...\n", buffer );
     fflush( stdout );
@@ -70,8 +70,8 @@ void join_local_game(){
             
     }while( !valid_id );
 
-    WRITE( fd[OUT],  name );
-    READ(  fd[IN], buffer );
+    WRITE( name );
+    READ( buffer );
         
     printf( "\nJoined \"%s\" game successfully! (ID: %d)\n", buffer, game_id );
     fflush( stdout );
@@ -124,9 +124,9 @@ void host_network_game(){
     fd[IN] = accept( fd[IN], (struct sockaddr *)&remote_addr, &sockin_size );
     fd[OUT] = fd[IN]; // Full duplex socket
     
-    WRITE( fd[OUT], name );
+    WRITE( name );
     
-    READ(  fd[IN],  buffer );
+    READ( buffer );
     
     strcpy( opponent_name, buffer );
     
@@ -180,12 +180,12 @@ void join_network_game(){
     }while( !connected );
 
     
-    READ( fd[IN], buffer );
+    READ( buffer );
     strcpy( opponent_name, buffer );
     
     printf( "\nConnected to \"%s\" game (%s:%d)\n", opponent_name, hostname, port );
 
-    WRITE( fd[OUT], name );
+    WRITE( name );
     
     sleep(2);
     
@@ -193,14 +193,14 @@ void join_network_game(){
 }
 
 void wait_opponent(){
-    printf( "\nWaiting for opponent to be ready...\n" );
+    if( !offline ) printf( "\nWaiting for opponent to be ready...\n" );
 
     fflush( stdout );
 
-    WRITE( fd[OUT], "ready" );
-    READ(  fd[IN], buffer );
+    WRITE( "ready" );
+    READ( buffer );
 
-    printf( "\nOpponent is ready!\nStarting the game...\n" );
+    if( !offline ) printf( "\nOpponent is ready!\nStarting the game...\n" );
     fflush( stdout );
     return;
 }
@@ -209,13 +209,13 @@ void send_settings(){
     printf( "\nSending settings...\n" );
 
     sprintf( buffer, "%hhu", settings -> board_size );
-    WRITE( fd[OUT], buffer );
+    WRITE( buffer );
 
     printf( "\nSent board size! (%s)\n", buffer );
  
     
     sprintf( buffer, "%hhu", settings -> num_ships );
-    WRITE( fd[OUT], buffer );
+    WRITE( buffer );
 
     printf( "\nSent number of ships! (%s)\n", buffer );
 
@@ -228,7 +228,7 @@ void send_settings(){
         ship_str[ MAX_SHIP_SQUARE ] = '\0';
         
         sprintf( buffer, "%s", ship_str );
-        WRITE( fd[OUT], buffer );
+        WRITE( buffer );
 
         printf( "\nSent ship #%hhu format! (%s)\n", k, buffer );
     }
@@ -241,19 +241,19 @@ void receive_settings(){
 
     printf( "\nReceiving settings...\n" );
 
-    READ( fd[IN], buffer );
+    READ( buffer );
     settings -> board_size = (byte)atoi( buffer );
 
     printf( "\nReceived board size! (%s)\n", buffer );
         
-    READ( fd[IN], buffer );
+    READ( buffer );
     settings -> num_ships = (byte)atoi( buffer );
 
     printf( "\nReceived number of ships! (%s)\n", buffer );
 
     for( int k = 1; k <= settings -> num_ships; k++ ){
         
-        READ( fd[IN], buffer );
+        READ( buffer );
         
         for( int i = 0; i < MAX_SHIP_SQUARE; i++ )
             settings -> ship[ k ][ i ] = ( buffer[ i ] == '1' ? true : false );
@@ -268,4 +268,28 @@ void receive_settings(){
 
     
     return;
+}
+
+
+
+int select_fd( int FILENO ){
+
+    int _fd;
+
+    if( FILENO == IN ){
+
+        _fd = ( offline && host ) ?  fd2[IN]  : fd[IN];
+        
+    }else if( FILENO == OUT ){
+
+        _fd = ( offline && !host ) ? fd2[OUT] : fd[OUT];
+         
+    }else{
+
+        printf( "\nDEBUG: Unknown select_fd()\n" );
+        _fd = ERR;
+    }
+
+    return _fd;
+    
 }

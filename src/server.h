@@ -23,4 +23,6 @@ void receive_settings();
 
 void wait_opponent();
 
+int select_fd( int FILENO );
+
 #endif

@@ -5,159 +5,79 @@
 #include "server.h"
 
 void play_offline(){
-    
-    byte n = settings -> board_size;
-    
+
     offline = true;
 
-    do{
-        printf( "\nSetting up Player #1\nPlayer Name:\n> " );
-        fgets( buffer, sizeof( buffer ), stdin );
-    }while( sscanf( buffer, "%[^\n]s", name ) != 1 );
-    
-    Player* player1 = init_player ( name );
-    setup_player( player1 );
-    
+    // Named semaphore shared between parent & child process (fork)
+    sem = sem_open( SEM_NAME, O_CREAT | O_EXCL, 0644, 1 );
+    sem_unlink( SEM_NAME );
 
-    do{
-        printf( "\nSetting up Player #2\nPlayer Name:\n> " );
-        fgets( buffer, sizeof( buffer ), stdin );
-    }while( sscanf( buffer, "%[^\n]s", name ) != 1 );
+    // Setup pipes for parent & child communication
+    pipe( fd );
+    pipe( fd2 );
     
-    Player* player2 = init_player ( name );
-    setup_player( player2 );
+    int pid = fork();
 
-    
-    // Select random player to start
-    player1_turn = rand_bool();
-    game_finished = false;
-    char msg[] = "\n\nThe War Begins!\n\nPlayer \"%s\" starts the game with the first play.\n";
+    // Parent host the game
+    host = ( pid != 0 ); 
 
-    // Notice who starts
-    if( player1_turn ){
-        printf( msg, player1 -> name );
-    } else {
-        printf( msg, player2 -> name );
+    if( pid != 0 ){
+        close( fd[IN] );
+        close( fd2[OUT] );
+        
+    }else{
+        close( fd2[IN] );
+        close( fd[OUT] );
     }
 
 
-    Player* player;
-    Player* enemy;
+    // Lock
+    sem_wait( sem );
     
     do{
-
-        Pos pos;
-
-	player = player1_turn ? player1 : player2;
-	enemy =  player1_turn ? player2 : player1;
-                    
-        do{
-           
-            char msg[] = "\nIt's \"%s\" turn.\nCoordinates x y to fire:\n> ";
-
-            print_board( player -> board, true );
-            printf( msg, player -> name );
-                 
-            fgets( buffer, sizeof( buffer ), stdin );
-        }while( sscanf( buffer, "%hhu %hhu", &pos.x, &pos.y ) != 2 );
-
-
-	// Check border limits
-        if( ( pos.x < 1 || pos.x > n ) || ( pos.y < 1 || pos.y > n ) ){
-            printf( "\nInvalid coordinates x y. Try again.\n" );
-            continue;
-        }    
-
-
-        // Set enemy_board depending on current player turn
-        Board* player_board = player -> board;
-        Board* enemy_board =  enemy -> board;
-        
-        // Set target cell considering (x y)
-        QNode* player_node = get_node( player_board -> qtree, pos );
-        QNode* enemy_node =  get_node( enemy_board -> qtree, pos );
-
-        Cell* player_target;
-
-
-        // Create node in our tree if it doesnt exist
-	// Needed to store information
-        if( player_node == NULL ){
-
-	    Cell new_cell;
-            init_cell( &new_cell, 0, UNKNOWN );
-            
-            QNode* new_node = init_qnode( pos, new_cell );
-            insert_node( player_board -> qtree, new_node );
-
-        }
-       
-        // Go down the tree to find node in leaves
-        player_node = get_node( player_board -> qtree, pos );
-
-	assert( player_node != NULL );
-	
-        player_target = &player_node -> cell;
-	
-
-        // Must play on cells that were not played before
-        if( player_target != NULL && player_target -> state != UNKNOWN ){
-            printf( "\nAlready played in %hhu %hhu. Try again.\n", pos.x, pos.y );
-            sleep(2);
-            continue;
-        }
-
-
-        // Ship found at (x y). HIT!
-        if( enemy_node != NULL && enemy_node -> cell.ship != 0 ){
-
-	    byte ship_idx =  enemy_node -> cell.ship;
-            Ship* enemy_ship = enemy_board -> ships[ ship_idx ];
-	    
-            enemy_ship -> shot_count++;
-
-	   	    
-            // Ship has no more pieces, then its dead
-            if( enemy_ship -> shot_count == enemy_ship -> size ){
-                enemy_ship -> alive = false;
-                enemy_board -> ships_alive--;
-            }
-	    
-            // If player has no more ships, game finish
-            if( enemy_board -> ships_alive == 0 ){
-                game_finished = true;
-            }
-	    
-            // Use our board to store opponent board as we hit
-            player_target -> state = HIT;
-            
-            print_board( player_board, true );
-            printf( "\nHIT!\n" );
-
-        }
-        // Missed :( Swap player turn
-        else{
-
-	    // No ship found in target cell
-            player_target -> state = MISS;
-            player1_turn = !player1_turn;
-
-            print_board( player_board, true );
-            printf( "\nMISS.\n" );
-        }
-
-  
-        // Wait a bit
-        sleep(2);
-        
-    }while( !game_finished );
-
-    printf( "\n\nGame finished!\nThe winner is \"%s\".\n\n",
-            player -> name );
-
+        printf( "\nEnter your nickname:\n> " );
+        fgets( buffer, sizeof( buffer ), stdin );
+ 
+    }while( sscanf( buffer, "%[^\n]s", name ) != 1 );
     
-    free_player( player1 );
-    free_player( player2 );
+    player = init_player( name );
+
+    setup_player( player );
+
+    // Print few empty lines to hide board
+    byte i = 100;
+    while( i-- > 0 )
+        putchar('\n');
+
+    // Unlock
+    sem_post( sem );
+
+
+    WRITE( name );
+    READ( buffer );
+    strcpy( opponent_name, buffer );
+
+    wait_opponent();
+    
+    // Start the game
+    start_game();
+    
+    // Game finished
+    free_player( player );
+
+    // Close pipes file descriptors
+    if( host ){
+        close( fd2[IN] );
+        close( fd[OUT] );
+    }else{
+        close( fd[IN] );
+        close( fd2[OUT] );
+    }
+
+    if( pid == 0 )
+        exit(0);
+    
+    sem_destroy( sem );
     
     return;
 }
@@ -237,14 +157,13 @@ void start_game(){
         // Decide who starts and send
         player1_turn = rand_bool();
         sprintf( buffer, "%d", player1_turn );
-        WRITE( fd[OUT], buffer );
-    
+        WRITE( buffer );
+   
     }else{
 
         // Receive who starts from host
-        READ( fd[IN], buffer );
-        player1_turn = ( atoi( buffer ) == true ); 
-
+        READ( buffer );
+        player1_turn = ( atoi( buffer ) == true );
     }
 
     do{
@@ -270,10 +189,12 @@ void start_game(){
 
     }while( !game_finished );
 
-    
-    printf( "\n\nGame finished!\nThe winner is \"%s\".\n\n",
-            ( host ? ( player1_turn ? player -> name : opponent_name )
-              : ( player1_turn ? opponent_name : player -> name ) ) );
+    // Do not print twice in offline mode (same terminal)
+    if( !offline || ( offline && host ) ){
+        printf( "\n\nGame finished!\nThe winner is \"%s\".\n\n",
+                ( host ? ( player1_turn ? player -> name : opponent_name )
+                  :      ( player1_turn ? opponent_name  : player -> name ) ) );
+    }
     
     return;
 }
@@ -317,11 +238,11 @@ bool send_shot( Player* player ){
     // Send shot coords
     sprintf( buffer, "%hhu %hhu", pos.x, pos.y );
     fflush( stdout );
-    WRITE( fd[OUT], buffer );
+    WRITE( buffer );
 
     
     // Receive enemy feedback
-    READ( fd[IN], buffer );
+    READ( buffer );
     fflush( stdout );
 
 
@@ -390,16 +311,16 @@ bool receive_shot( Player* player ){
 
     Board* player_board = player -> board;
     
-    print_board( player_board, false );
+    if( !offline ) print_board( player_board, false );
     char msg[] = "\nIt's \"%s\" turn.\nPlease wait...\n";
-    printf( msg, opponent_name );
+    if( !offline ) printf( msg, opponent_name );
     fflush( stdout );
 
     
     Pos pos;
     
     // Receive shot coords from enemy
-    READ( fd[IN], buffer );
+    READ( buffer );
     fflush( stdout );
     sscanf( buffer, "%hhu %hhu", &pos.x, &pos.y );
 
@@ -447,9 +368,9 @@ bool receive_shot( Player* player ){
             player_target -> ship = 99; // Hack
             
             sprintf( buffer, "%hhu", FINISH );
-            WRITE( fd[OUT], buffer );
-            print_board( player_board, false );
-            printf( "\nGame has finished.\n" );
+            WRITE( buffer );
+            if( !offline ) print_board( player_board, false );
+            if( !offline ) printf( "\nGame has finished.\n" );
             fflush( stdout );
             
             return true;
@@ -458,9 +379,9 @@ bool receive_shot( Player* player ){
         player_target -> ship = 99; // Hack
         
         sprintf( buffer, "%hhu", HIT );
-        WRITE( fd[OUT], buffer );
-        print_board( player_board, false );
-        printf( "\nGot hit by enemy!\n" );
+        WRITE( buffer );
+        if( !offline ) print_board( player_board, false );
+        if( !offline ) printf( "\nGot hit by enemy!\n" );
     
                     
     }else{
@@ -469,9 +390,9 @@ bool receive_shot( Player* player ){
         player1_turn = !player1_turn;
         
         sprintf( buffer, "%hhu", MISS );
-        WRITE( fd[OUT], buffer );
-        print_board( player_board, false );
-        printf( "\nEnemy missed shot.\n" );
+        WRITE( buffer );
+        if( !offline ) print_board( player_board, false );
+        if( !offline ) printf( "\nEnemy missed shot.\n" );
 
     }
     
