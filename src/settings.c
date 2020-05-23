@@ -220,7 +220,7 @@ void build_new_ship( byte idx ){
 
     bool confirm = false;
     do{
-        tmp_board = init_board( MAX_SHIP_SIZE );
+        tmp_board = init_board( MAX_SHIP_SIZE, MATRIX );
         
         do{
             print_board( tmp_board, false );

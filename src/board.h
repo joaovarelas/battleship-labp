@@ -3,10 +3,13 @@
 
 #include "ship.h"
 
+typedef enum { MATRIX, QUADTREE } BoardType;
+
 typedef enum { UP = 1, DOWN, LEFT, RIGHT, ROTATE } Move;
 
 typedef struct _Board {
-    
+
+    BoardType type;
     byte size; // 20x20 to 40x40
 
     //union {
@@ -21,21 +24,20 @@ typedef struct _Board {
 } Board;
 
 
-Board* init_board( byte n );
+Board* init_board( byte size, BoardType type );
+void init_matrix( Board* board );
 
 void copy_board( Board* dst, Board* src );
-void copy_tmp_board( Pos pos, Board* player_board, Board* ship_board, Board* tmp_board );
-
-bool ship_overlap( Board* dst, Board* src, Pos pos );
 
 void rotate_board( Board* board );
 void shift_board( Board* board, byte move );
 
-void init_matrix( Board* board );
-void matrix_to_qtree( Board* board );
+bool ship_overlap( Board* dst, Board* ship_board, Pos pos );
 
 void print_board( Board* board, bool game_mode );
 void print_cell( Board* board, Pos pos, bool game_mode );
+
+void matrix_to_qtree( Board* board );
 
 void free_board( Board* board );
 void free_matrix( Board* board );

@@ -5,6 +5,7 @@
 #include "settings.h"
 #include "random.h"
 #include "server.h"
+#include "quadtree.h"
 
 Ship* init_ship(){
     
@@ -32,7 +33,7 @@ void copy_ship( Ship* dst, Ship* src ){
 
 // Build ship from settings specification, given index idx
 Board* build_ship( byte idx ){
-    Board* tmp_board = init_board( MAX_SHIP_SIZE );
+    Board* tmp_board = init_board( MAX_SHIP_SIZE, MATRIX );
 
     byte k = 0;
     byte pieces = 0;
@@ -51,10 +52,11 @@ Board* build_ship( byte idx ){
         }
     }
 
+    
     tmp_board -> idx = idx;
-
+    
     tmp_board -> ships[ idx ] -> size = pieces;
-  
+    
     return tmp_board;
 }
 
@@ -69,7 +71,7 @@ void manual_place_ship( Board* player_board, Board* ship_board ){
     byte q;
     Pos pos;
     do{
-        Board* tmp_board = init_board( n );
+        Board* tmp_board = init_board( n, MATRIX );
 
         bool overlap = true;
 
@@ -78,13 +80,15 @@ void manual_place_ship( Board* player_board, Board* ship_board ){
                        
         do{
              
-            copy_tmp_board( pos, player_board, ship_board, tmp_board );
+            copy_board( tmp_board, player_board );
+
+            place_ship( tmp_board, ship_board, pos );
 
             print_board( tmp_board, false );
 
             // Check ship overlap
             overlap = ship_overlap( player_board, ship_board, pos );
-
+            
             if( overlap ){
                 char msg[] = "\nThere is a ship placed in this position already.\n" \
                     "Choose a different place.\n";
@@ -102,12 +106,12 @@ void manual_place_ship( Board* player_board, Board* ship_board ){
                 fgets( buffer, sizeof( buffer ), stdin );
             }while( sscanf( buffer, "%hhu", &q ) != 1 );
 
-            move_ship( q, &pos, ship_board );
+            move_ship( ship_board, q, &pos );
             
         }while( q != 6 || overlap );
 
-        place_ship( player_board, ship_board, tmp_board );
-            
+        place_ship( player_board, ship_board, pos );
+                           
         placed = true;
         
         free_board( tmp_board );
@@ -119,8 +123,7 @@ void manual_place_ship( Board* player_board, Board* ship_board ){
 
 
 void random_place_ship( Board* player_board, Board* ship_board ){
-    
-   
+
     byte n = settings -> board_size;
     
     byte upper = n - BOARD_SPAN;
@@ -131,41 +134,39 @@ void random_place_ship( Board* player_board, Board* ship_board ){
     Pos pos;
     
     do{
-        Board* tmp_board = init_board( n );
+        
+        Board* tmp_board = init_board( n, MATRIX );
 
         bool overlap = true;
 
-
         do{
+
+            // Random pos. for ship matrix
+            pos.x = rand_num( lower, upper );
+            pos.y = rand_num( lower, upper );
 
             byte times;
 
             // Random actions within ship matrix
             for( byte action = UP; action <= RIGHT; action++ ){
                 times = rand_num( 0, MAX_SHIP_SIZE - 1 );
-                while( times-- > 0 ) shift_board( ship_board, action );
+                while( times-- > 0 ) move_ship( ship_board, action, &pos );
             }
-
+          
             // Random rotate
             times = rand_num( 0, 3 );
             while( times-- > 0 ) rotate_board( ship_board );
-            
-            
-            // Random pos. for ship matrix
-            pos.x = rand_num( lower, upper );
-            pos.y = rand_num( lower, upper );
 
-            copy_tmp_board( pos, player_board, ship_board, tmp_board );
-
+            copy_board( tmp_board, player_board );
+            place_ship( tmp_board, ship_board, pos );
+         
             // Check ship overlap
             overlap = ship_overlap( player_board, ship_board, pos );
-            if( overlap )
-                continue;
           
-            
         }while( overlap );
 
-        place_ship( player_board, ship_board, tmp_board );
+        // Place ship on player board
+        place_ship( player_board, ship_board, pos );
 
         placed = true;
         
@@ -173,31 +174,69 @@ void random_place_ship( Board* player_board, Board* ship_board ){
         
     }while( !placed );
 
-    
- 
     return;
 }
 
 
 
-// Placement on player -> board
-void place_ship( Board* player_board, Board* ship_board, Board* tmp_board ){
+// Placement on board
+void place_ship( Board* dst, Board* src, Pos pos ){
     
-    copy_board( player_board, tmp_board );
+    byte idx = src -> idx;
+            
+    dst -> idx = idx;    
+    dst -> ships_alive++;
+    dst -> ships[ idx ] -> size = src -> ships[ idx ] -> size;
 
-    byte idx = ship_board -> idx;
+    byte span = ( MAX_SHIP_SIZE / 2 );
+
+    for( byte i = 0; i < MAX_SHIP_SIZE; i++ ){
+        for( byte j = 0; j < MAX_SHIP_SIZE; j++ ){
             
-    player_board -> idx = idx;    
-    player_board -> ships_alive++;
-    player_board -> ships[ idx ] -> size = ship_board -> ships[ idx ] -> size;
+            byte x = i + pos.x - 1 - span;
+            byte y = j + pos.y - 1 - span;
             
+            Pos new_pos;
+            init_pos( &new_pos, x + 1, y + 1 );
+                        
+            byte ship_idx = src -> matrix[ i ][ j ].ship;
+            
+            if( ship_idx != 0 ){
+
+                if( dst -> type == QUADTREE ){
+                    
+                    QNode* node = get_node( dst -> qtree, new_pos );
+
+                    if( node != NULL ){
+                        
+                        node -> cell.ship = ship_idx;
+                                                
+                    }else{
+                        
+                        Cell new_cell;
+                        init_cell( &new_cell, ship_idx, UNKNOWN );
+                       
+                        QNode* new_node = init_qnode( new_pos, new_cell );
+                        insert_node( dst -> qtree, new_node );
+                    }
+                    
+                }else{
+                    
+                    dst -> matrix[ x ][ y ].ship = ship_idx;
+                }
+                
+            }
+                
+        }
+    }
+    
     return;
 }
 
 
 
 // Move, shift, rotate and do a flip
-void move_ship( byte dir, Pos* pos, Board* ship_board ){
+void move_ship( Board* ship_board, byte dir, Pos* pos ){
 
     switch( dir ){
     case UP:

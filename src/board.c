@@ -2,23 +2,33 @@
 #include "settings.h"
 #include "quadtree.h"
 
-Board* init_board( byte n ){
-    
+Board* init_board( byte size, BoardType type ){
+
     Board* board = ( Board* ) malloc ( sizeof( Board ) );
-    board -> size = n;
 
-    Pos p, q;
-    init_pos( &p, 1, 1 );
-    init_pos( &q, n*n, n*n );
+    board -> type = type;
+    board -> size = size;
 
-    init_matrix( board );
-    board -> qtree = init_qtree( p, q );
+    board -> matrix = NULL;
+    board -> qtree = NULL;
     
+    if( type == QUADTREE ){
+        
+        Pos p, q;
+        init_pos( &p, 1, 1 );
+        init_pos( &q, size*size, size*size );
+        board -> qtree = init_qtree( p, q );
+    
+    }else{
+
+        init_matrix( board );
+    }
+
+    // Allocate enough slots for ships
     board -> ships = ( Ship** ) malloc ( ( 1 + MAX_SHIPS( settings -> board_size ) ) * sizeof( Ship* ) );
     board -> idx = 0;
     board -> ships_alive = 0;
-     
-    
+        
     for( byte i = 1; i <= MAX_SHIPS( settings -> board_size ) ; i++ ){
         board -> ships[ i ] = init_ship();
     }
@@ -49,17 +59,23 @@ void init_matrix( Board* board ){
 // Send it to the void
 void free_board( Board* board ){
 
-    if( board -> matrix != NULL )
-        free_matrix( board );
-
-    if( board -> qtree != NULL )
-	free_qtree( board -> qtree );
-
+    if( board -> type == QUADTREE ){
+        
+        if( board -> qtree != NULL )
+            free_qtree( board -> qtree );
+    }else{
+        
+        if( board -> matrix != NULL )
+            free_matrix( board );
+    }
+   
     for( byte i = 1; i <= MAX_SHIPS( board -> size ); i++ ){
         free( board -> ships[ i ] );
     }
     
     free( board -> ships );
+
+    board -> ships = NULL;
 
     free( board );
 
@@ -137,8 +153,7 @@ void print_cell( Board* board, Pos pos, bool game_mode ){
     
     Cell cell;
 
-    
-    if( board -> qtree -> size > 0 ){
+    if( board -> type == QUADTREE ){
 
         pos.x++;
         pos.y++;
@@ -196,30 +211,6 @@ void print_cell( Board* board, Pos pos, bool game_mode ){
     return;
 }
 
-
-
-// Temporary placement before final confirmation
-void copy_tmp_board( Pos pos, Board* player_board, Board* ship_board, Board* tmp_board ){
-
-    copy_board( tmp_board, player_board );
-
-    byte span = ( MAX_SHIP_SIZE / 2 );
-
-    for( byte i = 0; i < MAX_SHIP_SIZE; i++ ){
-        for( byte j = 0; j < MAX_SHIP_SIZE; j++ ){
-            byte ship_idx = ship_board -> matrix[ i ][ j ].ship;
-            
-            if( ship_idx != 0 ){
-                byte x = i + pos.x - 1 - span;
-                byte y = j + pos.y - 1 - span;
-                tmp_board -> matrix[ x ][ y ].ship = ship_idx;
-            }
-                
-        }
-    }
-   
-    return;
-}
 
 
 // Rotate nxn matrix 90º clockwise
@@ -302,46 +293,82 @@ void copy_board( Board* dst, Board* src ){
     byte n = dst -> size; 
     for( byte i = 0; i < n; i++){
         for( byte j = 0; j < n; j++){
-            dst -> matrix[ i ][ j ].ship = src -> matrix[ i ][ j ].ship;
+
+            byte ship = 0;
+            
+            if( src -> type == QUADTREE ){
+                
+                Pos pos;
+                init_pos( &pos, i+1, j+1 );
+                QNode* node = get_node( src -> qtree, pos );
+                
+                if( node != NULL ){
+                    ship = node -> cell.ship;
+                }else{
+                    ship = 0;
+                }
+                                           
+            }else{
+                ship = src -> matrix[ i ][ j ].ship;
+            }
+
+            dst -> matrix[ i ][ j ].ship = ship;
+
         }
     }
 
     // Copy idx
     dst -> idx = src -> idx;
-
+       
+    // Copy no. of alive ships
+    dst -> ships_alive = src -> ships_alive;
+    
     // Copy ships
     for( byte idx = 1; idx <= MAX_SHIPS( settings -> board_size ) ; idx++ ){
         copy_ship( dst -> ships[ idx ], src -> ships[ idx ] );
     }
 
-    // Copy no. of alive ships
-    dst -> ships_alive = src -> ships_alive;
 }
 
 
 // Check ship overlap
-bool ship_overlap( Board* dst, Board* src, Pos pos ){
-
+bool ship_overlap( Board* dst, Board* ship_board, Pos pos ){
+    
     byte ii = 0,
         jj = 0;
-    
+
     for( byte i = pos.x - 1 - BOARD_SPAN; i <= pos.x - 1 + BOARD_SPAN; i++){
         
         jj = 0;
         for( byte j = pos.y - 1 - BOARD_SPAN; j <= pos.y - 1 + BOARD_SPAN; j++){
 
-            // Overlap detected if there is a pixel of another ship
-            // where we want to place the ship
-            if( src -> matrix[ ii ][ jj ].ship != 0
-                && dst -> matrix[ i ][ j ].ship != 0 ){
-                return true;
-            
+            if( ship_board -> matrix[ ii ][ jj ].ship != 0 ){
+
+                if( dst -> type == QUADTREE ){
+
+                    Pos new_pos;
+                    init_pos( &new_pos, i + 1, j + 1 );
+                                       
+                    QNode* node = get_node( dst -> qtree, new_pos );
+
+                    if( node != NULL )
+                        return true;
+                    
+                }else{
+
+                    if( dst -> matrix[ i ][ j ].ship != 0 )
+                        return true;
+                    
+                }
+           
             }
             jj++;
             
         }
         ii++;
     }
+
+   
     
     return false;
 }

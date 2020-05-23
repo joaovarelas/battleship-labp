@@ -8,7 +8,19 @@ Player* init_player( char* name ){
     player -> name = ( char* ) malloc ( MAX_LINE_SIZE * sizeof ( char ) );
     
     strcpy( player -> name, name);
-    player -> board = init_board ( settings -> board_size  );
+
+    #ifdef _QUADTREE_
+    
+    player -> board = init_board ( settings -> board_size, QUADTREE );
+    #pragma message( "[ + ] USING QUADTREE DATA STRUCTURE" )
+
+    #else
+    
+    player -> board = init_board ( settings -> board_size, MATRIX );
+    #pragma message( "[ + ] USING MATRIX DATA STRUCTURE" )
+    
+    #endif
+
     player -> alive = true;
    
     return player;
@@ -24,7 +36,6 @@ void free_player( Player* player ){
     
     return;
 }
-
 
 
 // Setup player's name and board configuration
@@ -44,15 +55,15 @@ void setup_player( Player* player ){
 	while( idx <= settings -> num_ships ) {
 
 	    Board* ship = build_ship( idx );
-
+ 
 	    // Place ship on board (randomly or manually)
 	    if( qq == 1 )
                 random_place_ship( player -> board, ship );
 	    else
                 manual_place_ship( player -> board, ship );
-	
+
 	    free_board( ship );
-                
+
 	    idx++;
 	}
 
@@ -68,33 +79,16 @@ void setup_player( Player* player ){
 	    
 	    // Reset board and place ships over again
 	    free_board( player -> board );
-	    player -> board = init_board( settings -> board_size );
+            
+            #ifdef _QUADTREE_
+            player -> board = init_board ( settings -> board_size, QUADTREE );
+            #else
+            player -> board = init_board ( settings -> board_size, MATRIX );
+            #endif
 	    
 	}
 	
     }while( q != 1 );
-    
-
-    
-    #ifdef QUADTREE
-    
-    // Convert n x n cell matrix to quadtree
-    matrix_to_qtree( player -> board );
-    
-    // Get rid of matrix
-    // Game state is now supported by a quad tree structure
-    free_matrix( player -> board );
-
-    #pragma message( "[ + ] USING QUADTREE DATA STRUCTURE" )
-
-    #else
-
-    // Keep matrix
-    #pragma message( "[ + ] USING MATRIX DATA STRUCTURE" )
-
-    #endif
-
-   
     
     // Print final board to player
     print_board( player -> board, false );

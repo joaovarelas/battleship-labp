@@ -26,6 +26,8 @@ void play_offline(){
         close( fd2[OUT] );
         
     }else{
+        // Parent and child must have different seed
+        init_seed();
         close( fd2[IN] );
         close( fd[OUT] );
     }
@@ -52,13 +54,12 @@ void play_offline(){
     // Unlock
     sem_post( sem );
 
-
+    // Exchange player nicknames
     WRITE( name );
     READ( buffer );
-    strcpy( opponent_name, buffer );
-
-    wait_opponent();
     
+    strcpy( opponent_name, buffer );
+  
     // Start the game
     start_game();
     
@@ -74,6 +75,7 @@ void play_offline(){
         close( fd2[OUT] );
     }
 
+    // Terminate child process
     if( pid == 0 )
         exit(0);
     
@@ -103,12 +105,10 @@ void play_online(){
         fgets( buffer, sizeof( buffer ), stdin );
     }while( sscanf( buffer, "%[^\n]s", name ) != 1 );
 
-    player = init_player( name ); 
-
     
     // Join game or enter existing game (room)
     // using named pipes to synchronize both clients
-    //  or using tcp/ip sockets to communicate over network
+    // or using tcp/ip sockets to communicate over network
     
     if( q == 1 ){
         
@@ -122,12 +122,11 @@ void play_online(){
         receive_settings();
         host = false;
     }
-    
 
+    player = init_player( name ); 
     setup_player( player );
 
     wait_opponent();
-
     
     // Start the game
     start_game();
@@ -204,11 +203,11 @@ void start_game(){
 bool send_shot( Player* player ){
     
     Pos pos;
-    Board* player_board = player -> board;
     byte n = settings -> board_size;
+    BoardType board_type = player -> board -> type;
 
     do {
-        print_board( player_board, true );
+        print_board( player -> board, true );
         
         char msg[] = "\nIt's \"%s\" turn.\nCoordinates x y to fire:\n> ";
         printf( msg, player -> name );
@@ -225,16 +224,30 @@ bool send_shot( Player* player ){
         return false;
     }
 
-    QNode* node = get_node( player -> board -> qtree, pos );
+    Cell* target = NULL;
+    QNode* node = NULL;
+    
+    if( board_type == QUADTREE ){
+        
+        node = get_node( player -> board -> qtree, pos );
 
-    if( node != NULL && node -> cell.state != UNKNOWN ){
+        if( node != NULL ){
+            target = &node -> cell;
+        }
+        
+    }else{
+
+      target = &player -> board -> matrix[ pos.x - 1 ][ pos.y - 1 ];
+ 
+    }
+
+    if( target != NULL && target -> state != UNKNOWN ){
         printf( "\nAlready played in %hhu %hhu. Try again.\n", pos.x, pos.y );
         fflush( stdout );
         sleep(2);
         return false;
     }
 
-                
     // Send shot coords
     sprintf( buffer, "%hhu %hhu", pos.x, pos.y );
     fflush( stdout );
@@ -245,58 +258,51 @@ bool send_shot( Player* player ){
     READ( buffer );
     fflush( stdout );
 
-
-    // Set target cell considering (x y)
-    QNode* player_node = get_node( player_board -> qtree, pos );
-
-    Cell* player_target;
-
-
+    
     // Create node in our tree if it doesnt exist
-    if( player_node == NULL ){
+    if( board_type == QUADTREE && node == NULL ){
 
         Cell new_cell;
         init_cell( &new_cell, 0, UNKNOWN );
 	
         QNode* new_node = init_qnode( pos, new_cell );
-        insert_node( player_board -> qtree, new_node );
+        insert_node( player -> board -> qtree, new_node );
+
+        node = get_node( player -> board -> qtree, pos );
+        target = &node -> cell;
 
     }
-
-    player_node = get_node( player_board -> qtree, pos );
-    player_target = &player_node -> cell;
-
 
     byte state = atoi( buffer );
     
     if( state == HIT ){
         
-        player_target -> state = HIT;
+        target -> state = HIT;
         
-        print_board( player_board, true );
+        print_board( player -> board, true );
         printf( "\nHIT!\n" );
         fflush( stdout );
                   
     }else if( state == MISS ){
 
-        player_target -> state = MISS;
+        target -> state = MISS;
         player1_turn = !player1_turn;
         
-        print_board( player_board, true );
+        print_board( player -> board, true );
         printf( "\nMISS.\n" );
         fflush( stdout );
         
     }else if( state == FINISH ){
 
         game_finished = true;
-        player_target -> state = HIT;
+        target -> state = HIT;
         
-        print_board( player_board, true );
+        print_board( player -> board, true );
         printf( "\nGame has finished.\n" );
         fflush( stdout );
         
     }else{
-        printf( "\nERROR: received unknown data: \"%s\"\n", buffer );
+        printf( "\nERROR: received unknown data send_shot(): \"%s\"\n", buffer );
         fflush( stdout );
     }
 
@@ -309,9 +315,9 @@ bool send_shot( Player* player ){
 
 bool receive_shot( Player* player ){
 
-    Board* player_board = player -> board;
+    BoardType board_type = player -> board -> type;
     
-    if( !offline ) print_board( player_board, false );
+    if( !offline ) print_board( player -> board, false );
     char msg[] = "\nIt's \"%s\" turn.\nPlease wait...\n";
     if( !offline ) printf( msg, opponent_name );
     fflush( stdout );
@@ -324,74 +330,85 @@ bool receive_shot( Player* player ){
     fflush( stdout );
     sscanf( buffer, "%hhu %hhu", &pos.x, &pos.y );
 
+    QNode* node;
 
-    // Set target cell considering (x y)
-    QNode* player_node = get_node( player_board -> qtree, pos );
+    Cell* target;
 
-    Cell* player_target;
+    if( board_type == QUADTREE ){
+        
+        node = get_node( player -> board -> qtree, pos );
+        
+        if( node == NULL ){
+        
+            Cell new_cell;
+            init_cell( &new_cell, 0, UNKNOWN );
+            
+            QNode* new_node = init_qnode( pos, new_cell );
+            insert_node( player -> board -> qtree, new_node );
 
-    
-    if( player_node == NULL ){
+        }
+
+        // Get leaf node from our tree
+        node = get_node( player -> board -> qtree, pos );
+        target = &node -> cell;
         
-        Cell new_cell;
-        init_cell( &new_cell, 0, UNKNOWN );
+    }else{
         
-        QNode* new_node = init_qnode( pos, new_cell );
-        insert_node( player_board -> qtree, new_node );
-        
+        target = &player -> board -> matrix[ pos.x - 1 ][ pos.y - 1 ];
     }
-
-    // Get leaf node from our tree
-    player_node = get_node( player_board -> qtree, pos );
-    player_target = &player_node -> cell;
 
 
     // Check if valid ship has been hit
-    byte ship_idx =  player_target -> ship;
-    if( ship_idx > 0 && ship_idx <= MAX_SHIPS( player_board -> size ) ){
+    byte ship_idx = target -> ship;
+    if( ship_idx > 0 && ship_idx <= MAX_SHIPS( player -> board -> size ) ){
       
-        Ship* player_ship = player_board -> ships[ ship_idx ];
+        Ship* player_ship = player -> board -> ships[ ship_idx ];
 
 	// Ship destroyed
         player_ship -> shot_count++;
+        
         if( player_ship -> shot_count == player_ship -> size ){
             
             player_ship -> alive = false;
-            player_board -> ships_alive--;
+            player -> board -> ships_alive--;
             
         }
 
 	// If no ships alive then finish game (and lose)
-        if( player_board -> ships_alive == 0 ){
+        if( player -> board -> ships_alive == 0 ){
             
             game_finished = true;
-            player_target -> ship = 99; // Hack
+            target -> ship = 99; // Hack
             
             sprintf( buffer, "%hhu", FINISH );
             WRITE( buffer );
-            if( !offline ) print_board( player_board, false );
+            
+            if( !offline ) print_board( player -> board, false );
             if( !offline ) printf( "\nGame has finished.\n" );
+            
             fflush( stdout );
             
             return true;
         }
             
-        player_target -> ship = 99; // Hack
+        target -> ship = 99; // Hack
         
         sprintf( buffer, "%hhu", HIT );
         WRITE( buffer );
-        if( !offline ) print_board( player_board, false );
+        
+        if( !offline ) print_board( player -> board, false );
         if( !offline ) printf( "\nGot hit by enemy!\n" );
     
                     
     }else{
         
-        player_target -> ship = 66; // Hack
+        target -> ship = 66; // Hack
         player1_turn = !player1_turn;
         
         sprintf( buffer, "%hhu", MISS );
         WRITE( buffer );
-        if( !offline ) print_board( player_board, false );
+        
+        if( !offline ) print_board( player -> board, false );
         if( !offline ) printf( "\nEnemy missed shot.\n" );
 
     }

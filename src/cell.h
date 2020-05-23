@@ -3,12 +3,12 @@
 
 #include "config.h"
 
-typedef enum { UNKNOWN, HIT, MISS, FINISH } State;
+typedef enum { UNKNOWN, HIT, MISS, FINISH } CellState;
               
 typedef struct _Cell {
     
     byte ship; // Ship index
-    State state; // Hit or miss
+    CellState state; // Hit or miss
     
 } Cell;
 
@@ -18,7 +18,7 @@ typedef struct _Pos {
 } Pos;
 
 
-void init_cell( Cell* cell, byte ship, State state );
+void init_cell( Cell* cell, byte ship, CellState state );
 void init_pos( Pos* pos, byte x, byte y );
 
 void copy_cell( Cell* dst, Cell* src );

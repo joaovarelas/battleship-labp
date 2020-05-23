@@ -113,17 +113,16 @@ QNode* get_node( QTree* qtree, Pos pos ){
             return list -> node;
 	    
 	}else{
+            
+	    list = list -> next;
+            
+	    while( list != NULL ){
 
-
-	    QNodeList* current = list;
-	    
-	    while( current != NULL ){
-
-		if( equal_pos( &current -> node -> pos, &pos ) ){
-		    return current -> node;
+		if( equal_pos( &list -> node -> pos, &pos ) ){
+		    return list -> node;
 		}
 
-		current = current -> next;
+		list = list -> next;
 	    }
 
             return NULL;

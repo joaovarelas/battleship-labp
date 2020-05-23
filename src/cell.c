@@ -2,7 +2,7 @@
 #include "cell.h"
 
 
-void init_cell( Cell* cell, byte ship, State state ){
+void init_cell( Cell* cell, byte ship, CellState state ){
     cell -> ship = ship;
     cell -> state = state;
     return;

@@ -20,9 +20,9 @@ Board* build_ship( byte idx );
 
 void manual_place_ship( Board* player_board, Board* ship_board );
 void random_place_ship( Board* player_board, Board* ship_board );
-void place_ship( Board* player_board, Board* ship_board, Board* tmp_board );
-
-void move_ship( byte dir, Pos* pos, Board* ship_board );
+void place_ship( Board* dst, Board* src, Pos pos );
+                 
+void move_ship( Board* ship_board, byte dir, Pos* pos );
 
 #endif
 
