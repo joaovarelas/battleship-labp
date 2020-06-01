@@ -4,12 +4,11 @@
 
 QTree* init_qtree( Pos p1, Pos p2 ){
     QTree* qtree = ( QTree* ) malloc ( sizeof( QTree ) );
-
+    
     copy_pos( &qtree -> p1, &p1 );
     copy_pos( &qtree -> p2, &p2 );
-
+    
     qtree -> list = init_qnode_list( NULL );
-
     qtree -> size = 0;
     
     qtree -> nw = NULL;
@@ -51,27 +50,21 @@ void insert_node( QTree* qtree, QNode* node ){
     qtree -> size++;
     
     if( IN_RANGE( p1, p2 ) ){
-
+	
 	if( qtree -> list -> node == NULL ){
-
 	    qtree -> list -> node = node;
-
-	}else{
 	    
+	}else{
 	    QNodeList* list = qtree -> list;
-
 	    while( list -> next != NULL )
 	        list = list -> next;
-
-	    list -> next = init_qnode_list( node );
 	    
+	    list -> next = init_qnode_list( node );
 	}
-
+	
         return;
     }
     
-    QTree** branch = select_branch( qtree, pos );
-
     Pos q1, q2;
     init_pos( &q1,
               WESTSIDE( pos, p1, p2 )  ? p1.x : HALFX( p1, p2 ),
@@ -80,20 +73,17 @@ void insert_node( QTree* qtree, QNode* node ){
     init_pos( &q2,
               EASTSIDE( pos, p1, p2 )  ? p2.x : HALFX( p1, p2 ),
               SOUTHSIDE( pos, p1, p2 ) ? p2.y : HALFY( p1, p2 ) );
-
+    
+    QTree** branch = select_branch( qtree, pos );
     if( *branch == NULL )
         *branch = init_qtree( q1, q2 );
 
-        
-    insert_node( *branch, node );
-    
-    
+    insert_node( *branch, node );    
     return;
 }
 
 
 QNode* get_node( QTree* qtree, Pos pos ){
-
     if( qtree == NULL )
 	return NULL;
        
@@ -102,7 +92,6 @@ QNode* get_node( QTree* qtree, Pos pos ){
     
     if( !VALID_RANGE( pos, p1, p2 ) )
         return NULL;
-    
 
     QNodeList* list = qtree -> list;
     

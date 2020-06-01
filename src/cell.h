@@ -3,7 +3,7 @@
 
 #include "config.h"
 
-typedef enum { UNKNOWN, HIT, MISS, FINISH } CellState;
+typedef enum { UNKNOWN, HIT, MISS, FINISH, HIT_SHIP = 66, MISS_SHIP = 99 } CellState;
               
 typedef struct _Cell {
     

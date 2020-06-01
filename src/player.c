@@ -9,6 +9,7 @@ Player* init_player( char* name ){
     
     strcpy( player -> name, name);
 
+    // Decide which data struct to use for storing game board at compile time
     #ifdef _QUADTREE_
     
     player -> board = init_board ( settings -> board_size, QUADTREE );
@@ -46,7 +47,7 @@ void setup_player( Player* player ){
 
 	byte qq;
 	do{
-	    printf( "\n1 - Random Strategy\n2 - Custom Strategy\n> " );
+	    printf( "\n[1] Random Strategy\n[2] Custom Strategy\n> " );
 	    fgets( buffer, sizeof( buffer ), stdin );
 	}while( sscanf( buffer, "%hhu", &qq ) != 1 );
 
@@ -71,7 +72,7 @@ void setup_player( Player* player ){
 	print_board( player -> board, false );
 	    
 	do{
-	    printf( "\nDo you want to proceed with this board?\n1 - Yes\n2 - No\n> " );
+	    printf( "\nDo you want to proceed with this board?\n[1] Yes\n[2] No\n> " );
 	    fgets( buffer, sizeof( buffer ), stdin );
 	}while( sscanf( buffer, "%hhu", &q ) != 1 );
 

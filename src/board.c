@@ -195,10 +195,10 @@ void print_cell( Board* board, Pos pos, bool game_mode ){
         case 0:
             printf( " " );
             break;
-        case 66:
+        case MISS_SHIP:
             printf( "•" );
             break;
-        case 99:
+        case HIT_SHIP:
             printf( "X" );
             break;
         default:

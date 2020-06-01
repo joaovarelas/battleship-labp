@@ -91,8 +91,8 @@ void play_online(){
     offline = false;
     
     char menu[] =
-        "\n1 - Create new game\n" \
-        "2 - Join existing game\n> ";              
+        "\n[1] Create new game\n" \
+        "[2] Join existing game\n> ";              
                 
     byte q;
     do{
@@ -237,7 +237,7 @@ bool send_shot( Player* player ){
         
     }else{
 
-      target = &player -> board -> matrix[ pos.x - 1 ][ pos.y - 1 ];
+        target = &player -> board -> matrix[ pos.x - 1 ][ pos.y - 1 ];
  
     }
 
@@ -378,7 +378,7 @@ bool receive_shot( Player* player ){
         if( player -> board -> ships_alive == 0 ){
             
             game_finished = true;
-            target -> ship = 99; // Hack
+            target -> ship = HIT_SHIP; // Hack
             
             sprintf( buffer, "%hhu", FINISH );
             WRITE( buffer );
@@ -391,7 +391,7 @@ bool receive_shot( Player* player ){
             return true;
         }
             
-        target -> ship = 99; // Hack
+        target -> ship = HIT_SHIP; // Hack
         
         sprintf( buffer, "%hhu", HIT );
         WRITE( buffer );
@@ -402,7 +402,7 @@ bool receive_shot( Player* player ){
                     
     }else{
         
-        target -> ship = 66; // Hack
+        target -> ship = MISS_SHIP; // Hack
         player1_turn = !player1_turn;
         
         sprintf( buffer, "%hhu", MISS );

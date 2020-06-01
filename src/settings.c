@@ -92,7 +92,7 @@ void change_settings(){
         "\nBoard size: %hhu" \
         "\nNumber of ships: %hhu\n" \
         "\nDo you want to view current ships format?" \
-        "\n1 - Yes\n2 - No\n> ";
+        "\n[1] Yes\n[2] No\n> ";
 
     byte q;
     do{
@@ -112,7 +112,7 @@ void change_settings(){
     }
 
     do{
-        printf( "\n\nDo you want to change game settings?\n1 - Yes\n2 - No\n3 - Restore defaults\n> ");
+        printf( "\n\nDo you want to change game settings?\n[1] Yes\n[2] No\n[3] Restore defaults\n> ");
         fgets( buffer, sizeof( buffer ), stdin );
     }while( sscanf( buffer, "%hhu", &q ) != 1 );
     
@@ -150,7 +150,7 @@ void change_settings(){
             }
             
             do{
-                printf( "\nSave new settings to file?\n1 - Yes\n2 - No\n> " );
+                printf( "\nSave new settings to file?\n[1] Yes\n[2] No\n> " );
                 fgets( buffer, sizeof( buffer ), stdin );
             }while( sscanf( buffer, "%hhu", &q ) != 1 );
 
@@ -207,7 +207,7 @@ void restore_default(){
 }
 
 
-// Draw new ship
+// Draw new ship and save to settings
 void build_new_ship( byte idx ){
 
     Board* tmp_board;
@@ -272,8 +272,8 @@ void build_new_ship( byte idx ){
     
         char msg[] =
             "\nDo you want to finish and proceed?" \
-            " (Choosing \"No\" will reset the ship)\n\n" \
-            "1 - Yes\n2 - No\n> ";
+            " (Choosing [2] \"No\" will reset the ship)\n\n" \
+            "[1] Yes\n[2] No\n> ";
     
     
         byte x;

@@ -79,7 +79,8 @@ void manual_place_ship( Board* player_board, Board* ship_board ){
         init_pos( &pos, n/2, n/2 );
                        
         do{
-             
+
+            // Copy current player board to tmp board before final confirmation
             copy_board( tmp_board, player_board );
 
             place_ship( tmp_board, ship_board, pos );
@@ -97,8 +98,8 @@ void manual_place_ship( Board* player_board, Board* ship_board ){
             
 
             char msg[] = "\nPlace the ship on board:\n"     \
-                "\n1 - Up\n2 - Down\n3 - Left\n4 - Right"   \
-                "\n5 - Rotate (clockwise)\n6 - Done\n> ";
+                "\n[1] Up\n[2] Down\n[3] Left\n[4] Right"   \
+                "\n[5] Rotate (clockwise)\n[6] Done\n> ";
 
 
             do{
@@ -190,19 +191,23 @@ void place_ship( Board* dst, Board* src, Pos pos ){
 
     byte span = ( MAX_SHIP_SIZE / 2 );
 
+    // Iterate over ship board (5x5)
     for( byte i = 0; i < MAX_SHIP_SIZE; i++ ){
         for( byte j = 0; j < MAX_SHIP_SIZE; j++ ){
-            
+
+            // Transform coordinates to destination board (NxN)
             byte x = i + pos.x - 1 - span;
             byte y = j + pos.y - 1 - span;
             
-            Pos new_pos;
-            init_pos( &new_pos, x + 1, y + 1 );
-                        
             byte ship_idx = src -> matrix[ i ][ j ].ship;
             
             if( ship_idx != 0 ){
 
+                Pos new_pos;
+                init_pos( &new_pos, x + 1, y + 1 );
+
+
+                // Place pixel on destination board, either QUADTREE or MATRIX
                 if( dst -> type == QUADTREE ){
                     
                     QNode* node = get_node( dst -> qtree, new_pos );

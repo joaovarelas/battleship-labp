@@ -27,9 +27,9 @@ int main( int argc, char** argv ){
    
    
     char menu[] =
-	"\n1 - New game\n" \
-	"2 - Settings\n" \
-	"3 - Exit\n> ";
+	"\n[1] New game\n" \
+	"[2] Settings\n" \
+	"[3] Exit\n> ";
     
 
     byte q;
@@ -49,9 +49,9 @@ int main( int argc, char** argv ){
 	    {
                 
 		char menu[] =
-		    "\n1 - Play by turns\n" \
-		    "2 - Local multiplayer\n" \
-		    "3 - Internet multiplayer\n> ";              
+		    "\n[1] Play by turns\n" \
+		    "[2] Local multiplayer\n" \
+		    "[3] Internet multiplayer\n> ";              
                 
 		byte qq;
 	    
