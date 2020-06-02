@@ -4,8 +4,7 @@ author:
 - João Varelas
 date:
  - Junho, 2020
-geometry: a4paper
-geometry: margin=3cm
+geometry: a4paper,left=3cm,right=3cm,top=2cm,bottom=2cm
 output: pdf_document
 ---
 
@@ -25,8 +24,8 @@ Por exemplo, através do `Makefile`:
 
 e depois `make run`.
 
-Para facilitar este processo, estão incluidos scripts `.sh` com os comandos necessários 
-para a compilação.
+Para facilitar este processo, estão incluidos dois scripts `.sh` com os comandos necessários 
+para a compilação e execução.
 
 O binário executável do `client` será gerado no diretório `bin/`. 
 
@@ -37,8 +36,9 @@ O binário executável do `client` será gerado no diretório `bin/`.
 Pode ser alterado o tamanho do tabuleiro entre 20x20 e 40x40 e o número de barcos 
 entre 5 e SIZE*SIZE/25, onde SIZE é o tamanho atual do lado do tabuleiro.
 
-As definições do jogo serão posteriormente transmitidas aos jogadores estableçam ligação
-de forma a iniciar uma partida (quem hospeda o jogo é quem define a configuração do tabuleiro).
+As definições do jogo serão posteriormente transmitidas aos jogadores que estableçam ligação
+com o anfitrião para que ambos partilhem a mesma configuração de jogo (quem hospeda o jogo 
+é quem define a configuração do tabuleiro).
 
 As configurações são guardadas de forma persistente no diretório `settings/`.
 O formato do ficheiro é o seguinte:
@@ -78,7 +78,7 @@ são pedidas N configurações que consiste no posicionamento de pixeis numa mat
 
 A lógica/base do jogo mantém-se para os 3 modos possíveis. A principal diferença está
 na atribuição dos respetivos _file descriptors_ de forma a permitir que cada modo
-de jogo comunique com o adversário da maneira correta, consoante o caso.
+de jogo comunique com o adversário da maneira mais adequada.
 
 ## Modo offline
 
@@ -97,7 +97,7 @@ partilhado entre os 2 jogadores para que consigam establecer ligação.
 ## Modo online (computadores diferentes)
 
 À semelhança dos anteriores, execeto que os _fd's_ são inicializados através de `socket()`
-para establecer uma ligação _TCP/IP_.
+para establecer uma ligação sobre _TCP/IP_.
 O anfitrião define a porta que deverá ficar à escuta (o _bind address_ é 0.0.0.0 por definição).
 
 
@@ -132,7 +132,7 @@ Após os dois jogadores finalizarem a colocação de barcos nos seus tabuleiros,
 inicia.
 
 É escolhido um jogador aleatóriamente para iniciar o jogo (jogador 1 ou jogador 2)
-e de imediato são pedidas coordenadas `(x y)` para fazer um disparo.
+e de imediato são pedidas coordenadas `x y` para fazer um disparo.
 
 Cada célula do tabuleiro tem 3 estados possíveis: `UNKNOWN`, `HIT` e `MISSED`.
 
